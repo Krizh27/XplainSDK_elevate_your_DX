@@ -10,6 +10,7 @@ export interface CreateAgentToolOptions<TArgs = Record<string, any>, TResult = a
     description: string;
     schema?: any;
     parameters?: Record<string, any>;
+    requiresApproval?: boolean;
     execute: (args: TArgs) => Promise<TResult> | TResult;
 }
 
@@ -18,10 +19,11 @@ export interface CreateAgentToolOptions<TArgs = Record<string, any>, TResult = a
  * 
  * @example
  * ```typescript
- * const weatherTool = createAgentTool({
- *   name: "get_weather",
- *   description: "Get current weather forecast for a city",
- *   execute: async ({ city }: { city: string }) => `30°C in ${city}`
+ * const deleteDatabaseTool = createAgentTool({
+ *   name: "delete_database",
+ *   description: "Deletes a database table",
+ *   requiresApproval: true, // Pauses execution for Human-in-the-Loop approval
+ *   execute: async ({ tableName }: { tableName: string }) => `Deleted ${tableName}`
  * });
  * ```
  */
@@ -51,6 +53,7 @@ export function createAgentTool<TArgs = Record<string, any>, TResult = any>(
         description: options.description || "",
         schema: options.schema,
         parameters: options.parameters,
+        requiresApproval: options.requiresApproval || false,
         execute: options.execute
     };
 }

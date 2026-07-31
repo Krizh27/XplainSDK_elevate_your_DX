@@ -1,28 +1,14 @@
 import { AgentConfig, AgentRunOptions, AgentRunResult, AgentTool } from "./types.js";
 import { StorageAdapter } from "./memory/types.js";
+import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 import { runAgentLoop } from "./runner.js";
 
 /**
  * @class Agent
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
- * An `Agent` encapsulates identity name, instructions, model, tools, options,
- * and persistent `memory` storage adapters. Execution is delegated to `runAgentLoop()`.
- * 
- * @example
- * ```typescript
- * const memory = new FileStorageAdapter({ storageDir: "./my_sessions" });
- * 
- * const agent = new Agent({
- *   name: "SupportAgent",
- *   instructions: "You are a customer support agent.",
- *   model: "gpt-4o-mini",
- *   apiKey: process.env.OPENAI_API_KEY,
- *   memory
- * });
- * 
- * const res = await agent.run({ input: "My name is Alice", sessionId: "user_1" });
- * ```
+ * An `Agent` encapsulates identity name, instructions, model, tools, memory,
+ * guardrails (`inputGuardrails`, `outputGuardrails`), and human approval callbacks (`onApprovalRequired`).
  */
 export class Agent {
     public readonly name: string;
@@ -34,6 +20,9 @@ export class Agent {
     public readonly maxIterations: number;
     public readonly tools: AgentTool[];
     public readonly memory?: StorageAdapter;
+    public readonly inputGuardrails?: InputGuardrail[];
+    public readonly outputGuardrails?: OutputGuardrail[];
+    public readonly onApprovalRequired?: ApprovalCallback;
 
     /**
      * Instantiates a new Agent instance.
@@ -68,6 +57,9 @@ export class Agent {
         this.maxIterations = config.maxIterations || 10;
         this.tools = config.tools || [];
         this.memory = config.memory;
+        this.inputGuardrails = config.inputGuardrails;
+        this.outputGuardrails = config.outputGuardrails;
+        this.onApprovalRequired = config.onApprovalRequired;
     }
 
     /**

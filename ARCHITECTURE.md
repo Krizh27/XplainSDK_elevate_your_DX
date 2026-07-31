@@ -43,36 +43,51 @@
 | **Vision** | Core Mission & Project Boundaries ([VISION.md](file:///c:/Users/meena/Downloads/AI_SDK_TEST/VISION.md)) | ✅ Established |
 | **ExplainSDK** | DX Layer, Flight Recorder, Inspectors, Prompt/Behavior Advisors | ✅ Completed |
 | **Agent Phase 1** | Core Agent Runtime, Tool System & Execution Loop (`Agent`, `createAgentTool`, `runAgentLoop`) | ✅ Completed |
-| **Agent Phase 2** | Persistent Memory & Storage Adapters (`StorageAdapter`, `InMemoryStorageAdapter`, `FileStorageAdapter`) | ✅ Completed (Current) |
+| **Agent Phase 2** | Persistent Memory & Storage Adapters (`StorageAdapter`, `InMemoryStorageAdapter`, `FileStorageAdapter`) | ✅ Completed |
+| **Agent Phase 3** | Guardrails & Human-in-the-Loop Approval (`inputGuardrails`, `outputGuardrails`, `onApprovalRequired`) | ✅ Completed (Current) |
 
 ---
 
-## 🧠 Memory & Storage Architecture (Agent Phase 2)
+## 🛡 Guardrail & Approval Architecture (Agent Phase 3)
 
-### Clean Separation of Concerns
-1. **`AgentConfig`**: Declarative configuration specifying identity, instructions, model, tools, and `memory` adapter.
-2. **`RunContext`**: Transient per-run execution context holding `sessionId`, `input`, and loaded `history` messages.
-3. **`StorageAdapter`**: Universal storage contract (`get(sessionId)`, `set(sessionId, messages)`, `clear(sessionId)`).
-4. **Implementations**:
-   - `InMemoryStorageAdapter`: Fast in-memory `Map<string, AgentMessage[]>` adapter.
-   - `FileStorageAdapter`: Persistent JSON disk file storage adapter (`./storage/<sessionId>.json`).
-
-### Session Lifecycle Flow
 ```text
-agent.run({ input, sessionId: "sess_1" })
-              │
-              ▼
-   1. loadSessionHistory(agent.memory, sessionId)
-              │
-              ▼
-   2. Execute LLM Turn via ExplainSDK
-              │
-              ▼
-   3. Append new user turn & assistant response turn to history
-              │
-              ▼
-   4. saveSessionHistory(agent.memory, sessionId, updatedHistory)
+agent.run({ input })
+       │
+       ▼
+ 1. runInputGuardrails(input, agent.inputGuardrails)
+       │
+       ├── Fails? ──► Throw [AgentSDK Guardrail Error]
+       └── Passed? ──► Continue to Runtime Loop
+             │
+             ▼
+ 2. LLM completion selects tool execution?
+       │
+       ├── Tool requiresApproval === true?
+       │     │
+       │     ▼
+       │   onApprovalRequired({ toolName, args })
+       │     ├── Approved (true)  ──► Execute Tool ──► Followup completion
+       │     └── Denied (false)   ──► Return "Tool execution denied" ──► Continue conversation safely
+       │
+       └── Normal tool ──► Execute Tool normally
+             │
+             ▼
+ 3. LLM produces output text
+       │
+       ▼
+ 4. runOutputGuardrails(output, agent.outputGuardrails)
+       │
+       └── Return AgentRunResult { output_text, session, history }
 ```
+
+### Key Principles Implemented
+1. **Input Guardrails Run FIRST**: Input guardrails execute before the LLM runtime loop starts. If an input policy fails, execution halts immediately with an actionable diagnostic error.
+2. **Human Approval Callbacks for Tools**:
+   - Tools can specify `requiresApproval: true`.
+   - Before executing a sensitive tool, Agent SDK pauses and calls `onApprovalRequired({ toolName, args, agentName })`.
+   - If approved (`true`), execution proceeds.
+   - If rejected (`false`), **execution does not crash**! It feeds a safe cancellation tool message (`Tool execution denied by operator`) back to the model so the conversation continues safely.
+3. **Output Guardrails Run LAST**: Output guardrails validate generated LLM responses before returning results to the caller.
 
 ---
 
@@ -87,23 +102,22 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── test.ts               # Interactive ExplainSDK test script
 ├── test_agent.ts         # Agent SDK Phase 1 test script
 ├── examples/
-│   └── 02_memory_agent.ts# [NEW IN AGENT PHASE 2] Multi-turn memory example
+│   ├── 02_memory_agent.ts         # Multi-turn memory example
+│   └── 03_guardrails_approval_agent.ts # [NEW IN AGENT PHASE 3] Guardrails & Approval example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
     ├── session.ts        # Session flight recorder & exportSession helper
     ├── inspectors/       # Inspector Framework directory
     ├── providers/        # Provider translation adapters
-    └── agent/            # [AGENT SDK CORE CORE]
+    └── agent/            # [AGENT SDK CORE]
         ├── agent.ts      # Agent class definition
         ├── tool.ts       # createAgentTool() typed definition helper
         ├── runner.ts     # runAgentLoop() pure orchestrator function
         ├── types.ts      # AgentConfig, RunContext, AgentRunResult
-        ├── index.ts      # Agent module barrel export
-        └── memory/       # [NEW IN AGENT PHASE 2]
-            ├── types.ts         # StorageAdapter & AgentMessage schemas
-            ├── inMemory.ts      # InMemoryStorageAdapter class
-            ├── fileStorage.ts   # FileStorageAdapter class
-            ├── memoryManager.ts # Pure memory load/save helper functions
-            └── index.ts         # Memory module barrel export
+        ├── memory/       # Persistent Memory & Storage Adapters
+        └── guardrails/   # [NEW IN AGENT PHASE 3]
+            ├── types.ts     # InputGuardrail, OutputGuardrail, ApprovalCallback
+            ├── pipeline.ts  # runInputGuardrails(), runOutputGuardrails()
+            └── index.ts     # Guardrails barrel export
 ```

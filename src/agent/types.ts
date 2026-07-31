@@ -1,5 +1,6 @@
 import { StreamSpeedPreset, SessionRecord } from "../types.js";
 import { StorageAdapter, AgentMessage } from "./memory/types.js";
+import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 
 /**
  * @file agent/types.ts
@@ -7,10 +8,17 @@ import { StorageAdapter, AgentMessage } from "./memory/types.js";
  */
 
 export interface AgentTool<TArgs = Record<string, any>, TResult = any> {
+    /** Unique name identifier for the tool. */
     name: string;
+    /** Clear description explaining what the tool does to the LLM model. */
     description: string;
+    /** Optional Zod schema or JSON schema definition for argument validation. */
     schema?: any;
+    /** Optional raw JSON parameter schema. */
     parameters?: Record<string, any>;
+    /** Optional flag indicating whether human approval is required before executing this tool. @default false */
+    requiresApproval?: boolean;
+    /** Execution function invoked when the model calls this tool. */
     execute: (args: TArgs) => Promise<TResult> | TResult;
 }
 
@@ -44,6 +52,15 @@ export interface AgentConfig {
 
     /** Optional persistent memory storage adapter implementation. */
     memory?: StorageAdapter;
+
+    /** Optional array of Input Guardrails executed before runtime loop. */
+    inputGuardrails?: InputGuardrail[];
+
+    /** Optional array of Output Guardrails executed after LLM completion. */
+    outputGuardrails?: OutputGuardrail[];
+
+    /** Optional callback invoked when a tool marked `requiresApproval: true` requests execution. */
+    onApprovalRequired?: ApprovalCallback;
 }
 
 /**
