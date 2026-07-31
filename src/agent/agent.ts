@@ -7,6 +7,8 @@ import { AgentEventEmitter } from "./events/emitter.js";
 import { AgentEventName, AgentEventListener } from "./events/types.js";
 import { AgentExplanation } from "./explain/types.js";
 import { generateExplanation } from "./explain/explain.js";
+import { ReplayData } from "./replay/types.js";
+import { reconstructReplay } from "./replay/replay.js";
 import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
 import { SessionRecord } from "../types.js";
@@ -17,7 +19,7 @@ import { SessionRecord } from "../types.js";
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
  * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`,
- * runtime event emitter (`.on()`, `.off()`), Explain Mode (`agent.explain()`), and structured output execution.
+ * runtime event emitter (`.on()`), Explain Mode (`agent.explain()`), Session Replay (`agent.replay()`), and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -116,12 +118,6 @@ export class Agent {
      * 
      * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
      * @returns Structured AgentExplanation object.
-     * 
-     * @example
-     * ```typescript
-     * const explanation = agent.explain(result);
-     * console.log(explanation.summary);
-     * ```
      */
     public explain(sessionOrResult: SessionRecord | AgentRunResult): AgentExplanation {
         if (!sessionOrResult) {
@@ -132,6 +128,29 @@ export class Agent {
         const handoffChain = "handoffChain" in sessionOrResult ? (sessionOrResult as AgentRunResult).handoffChain : undefined;
 
         return generateExplanation(session, { handoffChain });
+    }
+
+    /**
+     * Reconstructs a step-by-step execution timeline array from a recorded SessionRecord or AgentRunResult.
+     * 
+     * Zero Side Effects: Does NOT invoke LLM providers or rerun tool functions.
+     * 
+     * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
+     * @returns Structured ReplayData object.
+     * 
+     * @example
+     * ```typescript
+     * const replayData = agent.replay(result);
+     * console.log(replayData.totalSteps);
+     * ```
+     */
+    public replay(sessionOrResult: SessionRecord | AgentRunResult): ReplayData {
+        if (!sessionOrResult) {
+            throw new Error(`[AgentSDK Error] Missing SessionRecord or AgentRunResult argument in agent.replay().`);
+        }
+
+        const session = "session" in sessionOrResult ? sessionOrResult.session : (sessionOrResult as SessionRecord);
+        return reconstructReplay(session);
     }
 
     /**

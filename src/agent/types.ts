@@ -3,6 +3,7 @@ import { StorageAdapter, AgentMessage } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 import { Agent } from "./agent.js";
 import { AgentExplanation, ExplainFunction } from "./explain/types.js";
+import { ReplayData, ReplayFunction } from "./replay/types.js";
 import {
     RunStartPayload,
     ToolStartPayload,
@@ -174,4 +175,7 @@ export interface AgentRunResult {
 
     /** Callable ExplainFunction: invoke `result.explain()` for console output, `.markdown()` for report, `.json()` for data. */
     explain: ExplainFunction;
+
+    /** Callable ReplayFunction: invoke `result.replay()` for step-by-step playback, `.markdown()` for report, `.json()` for data. */
+    replay: ReplayFunction;
 }

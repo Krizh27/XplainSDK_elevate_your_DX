@@ -50,45 +50,34 @@
 | **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed |
 | **Agent Phase 7** | Runtime Event Emitter & ExplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed |
 | **Agent Phase 8** | Production-Quality Documentation, Examples Suite & NPM Package Polish | ✅ Completed |
-| **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed (Current) |
+| **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed |
+| **Agent Phase 10**| Session Replay Engine (`result.replay()`, Step-by-Step Reconstruction, Zero Side Effects) | ✅ Completed (Current) |
 
 ---
 
-## 🧠 Explain Mode Architecture (Agent Phase 9)
+## 🎬 Session Replay Architecture (Agent Phase 10)
 
 ```text
-                               Agent Run Execution
-                                       │
-                                       ▼
-                             ExplainSDK Session Record
-                                       │
-            ┌──────────────────────────┼──────────────────────────┐
-            ▼                          ▼                          ▼
-    inspectPerformance()        inspectTools()             inspectPrompt()
-    inspectTokens()             inspectTimeline()          inspectBehavior()
-    inspectCost()
-            │                          │                          │
-            └──────────────────────────┼──────────────────────────┘
-                                       │
-                                       ▼
-                       generateExplanation(session)  [src/agent/explain/explain.ts]
-                                       │
-                      ┌────────────────┴────────────────┐
-                      ▼                                 ▼
-             AgentExplanation JSON             formatExplainConsole()
-                                               formatExplainMarkdown()
+                       ExplainSDK Session Record
+                                   │
+                                   ▼
+                    reconstructReplay(session)  [src/agent/replay/replay.ts]
+                                   │
+                                   ▼
+                             ReplayData Payload
+                      ┌────────────┴────────────┐
+                      ▼                         ▼
+            formatReplayConsole()     formatReplayMarkdown()
 ```
 
 ### Key Principles Implemented
-1. **Zero Logic Duplication**: Explain Mode consumes telemetry produced by ExplainSDK inspectors (`inspect.performance`, `inspect.tokens`, `inspect.cost`, `inspect.tools`, `inspect.prompt`, `inspect.behavior`). It does not re-implement timeline tracking or performance calculations.
+1. **Zero Re-Execution Guarantee**: Session Replay operates 100% deterministically on recorded `SessionRecord` telemetry. It **never** invokes network APIs, re-executes providers, or reruns tools.
 2. **First-Class Developer API**:
-   - `const result = await agent.run({ input, explain: true });`
-   - `result.explain()` (Pretty terminal output)
-   - `result.explain.markdown()` (Formatted markdown report)
-   - `result.explain.json()` or `result.explanation` (Strongly-typed JSON payload)
-   - `agent.explain(result)` or `agent.explain(sessionRecord)`
-3. **Structured Explanation Model**: Synthesizes executive summary, model decisions, tool usage, handoffs, guardrails, retries, observations, recommendations, and confidence levels.
-4. **Isolated Formatters**: Dedicated renderers for Console Output, Markdown, and JSON.
+   - `result.replay()` (Pretty step-by-step terminal playback)
+   - `result.replay.markdown()` (Formatted markdown report)
+   - `result.replay.json()` (Structured `ReplayData` steps array)
+   - `agent.replay(session)` or `agent.replay(result)`
+3. **Deterministic Step Reconstruction**: Reconstructs complete request lifecycle into chronological steps (User Input $\rightarrow$ Tool Executions $\rightarrow$ Handoffs $\rightarrow$ Final Output).
 
 ---
 
@@ -111,7 +100,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   ├── 05_structured_output_agent.ts   # Structured Output example
 │   ├── 06_multi_agent_handoff_agent.ts # Multi-Agent Handoff example
 │   ├── 07_events_tracing_agent.ts # Events & Tracing example
-│   └── 08_explain_mode_agent.ts   # [NEW IN AGENT PHASE 9] Explain Mode example
+│   ├── 08_explain_mode_agent.ts   # Explain Mode example
+│   └── 09_session_replay_agent.ts # [NEW IN AGENT PHASE 10] Session Replay example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
@@ -129,9 +119,10 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── structured/   # Structured Outputs & Schema Repair
         ├── handoff/      # Multi-Agent Handoffs & Loop Prevention
         ├── events/       # Runtime Events & Tracing
-        └── explain/      # [NEW IN AGENT PHASE 9]
-            ├── types.ts       # AgentExplanation, ExplainFunction
-            ├── explain.ts     # generateExplanation() pure orchestrator
-            ├── formatter.ts   # formatExplainConsole(), formatExplainMarkdown()
-            └── index.ts       # Explain exports
+        ├── explain/      # Explain Mode Orchestrator
+        └── replay/       # [NEW IN AGENT PHASE 10]
+            ├── types.ts       # ReplayStep, ReplayData, ReplayFunction
+            ├── replay.ts      # reconstructReplay() deterministic engine
+            ├── formatter.ts   # formatReplayConsole(), formatReplayMarkdown()
+            └── index.ts       # Replay exports
 ```

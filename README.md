@@ -2,7 +2,7 @@
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
-ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, and **Explain Mode**.
+ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, and **Session Replay**.
 
 ---
 
@@ -22,8 +22,9 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
   - [8. Multi-Agent Handoffs & Loop Prevention](#8-multi-agent-handoffs--loop-prevention)
   - [9. Runtime Event Emitter & Tracing](#9-runtime-event-emitter--tracing)
   - [10. Explain Mode (Executive Summaries)](#10-explain-mode-executive-summaries)
-  - [11. ExplainSDK Inspector Framework](#11-explainsdk-inspector-framework)
-  - [12. Actionable Diagnostic Errors](#12-actionable-diagnostic-errors)
+  - [11. Session Replay (Step-by-Step Reconstruction)](#11-session-replay-step-by-step-reconstruction)
+  - [12. ExplainSDK Inspector Framework](#12-explainsdk-inspector-framework)
+  - [13. Actionable Diagnostic Errors](#13-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
 - [License](#-license)
 
@@ -61,7 +62,7 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
 
 1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `ExplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
 2. **Single Class Rule**: `Agent` and `ExplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
-3. **Zero Duplication**: **Explain Mode** consumes telemetry produced by ExplainSDK inspectors (`inspect.performance`, `inspect.tokens`, `inspect.cost`, `inspect.tools`, `inspect.prompt`, `inspect.behavior`) into a human-readable executive summary without duplicating underlying analysis logic.
+3. **Zero Re-Execution**: **Session Replay** operates 100% deterministically on recorded `SessionRecord` flight recorder objects with zero side effects, never re-calling APIs or re-executing tools.
 
 ---
 
@@ -90,24 +91,20 @@ const weatherTool = createAgentTool({
 // 2. Instantiate an Agent
 const agent = new Agent({
     name: "WeatherAssistant",
-    instructions: "You are a friendly weather assistant. Be concise and polite.",
+    instructions: "You are a friendly weather assistant.",
     model: "gpt-4o-mini",
     apiKey: process.env.OPENAI_API_KEY!,
     tools: [weatherTool]
 });
 
-// 3. Execute agent run with Explain Mode
-const result = await agent.run({
-    input: "What is the weather in Surat today?",
-    explain: true
-});
+// 3. Execute agent run
+const result = await agent.run({ input: "What is the weather in Surat today?" });
 
 console.log(result.output_text);
 
-// First-class Explain Mode API
-result.explain();          // Pretty console summary box
-console.log(result.explain.markdown()); // Markdown report
-const data = result.explain.json();      // Structured JSON payload
+// Session Replay & Explain Mode API
+result.replay();   // Step-by-step console playback
+result.explain();  // Executive summary box
 ```
 
 ---
@@ -327,36 +324,58 @@ const mdReport = result.explain.markdown();
 
 // Option 3: Structured JSON data payload
 const jsonPayload = result.explain.json();
-console.log(jsonPayload.summary);
-
-// Option 4: Direct agent inspection
-const explanation = agent.explain(result.session);
 ```
 
-#### Terminal Console Output Example:
+---
+
+### 11. Session Replay (Step-by-Step Reconstruction)
+
+Reconstruct an entire agent execution step by step with **zero side effects** and **zero provider re-calls**.
+
+```typescript
+const result = await agent.run({ input: "Search KB for password reset" });
+
+// Option 1: Step-by-Step Terminal Playback
+result.replay();
+
+// Option 2: Markdown Replay Report
+const markdownReplay = result.replay.markdown();
+
+// Option 3: Structured Replay Steps Data
+const replayData = result.replay.json();
+console.log(replayData.steps[0].title);
+
+// Option 4: Direct agent replay inspection
+const replay = agent.replay(result.session);
+```
+
+#### Terminal Console Replay Output Example:
 ```text
 ────────────────────────────────────────────────────────────
-🧠 Explain Mode Execution Summary
+🎬 Session Replay (Session: sess_1722438000_abc123)
+Provider: OPENAI | Model: gpt-4o-mini | Steps: 3
 ────────────────────────────────────────────────────────────
 
-Summary
-The model processed the request in 580 ms utilizing 214 total tokens. It decided to invoke 1 tool(s) (get_weather).
+STEP 1 [USER_INPUT] ▶ User Prompt Input Received
+  Input: "Search the KB for password reset steps."
 
-Performance & Cost
-• Duration:       580 ms
-• Total Tokens:   214
-• Estimated Cost: $0.00003
+STEP 2 [TOOL_EXECUTION] ✓ Tool Called: search_kb()
+  Arguments: {"query":"password reset"}
+  Duration:  14 ms
+  Result:    {"title":"Reset Password Guide"}
 
-Tool Executions
-  ✓ Executed tool "get_weather()" in 12 ms
+STEP 3 [RESPONSE] ✓ Assistant Final Response Produced
+  Output: "Here is the guide for resetting your password..."
+  Tokens: 210 | Cost: $0.00003
 
-Explanation Confidence: HIGH
+────────────────────────────────────────────────────────────
+🏁 Replay Complete (480 ms Total Duration)
 ────────────────────────────────────────────────────────────
 ```
 
 ---
 
-### 11. ExplainSDK Inspector Framework
+### 12. ExplainSDK Inspector Framework
 
 Inspect any `SessionRecord` using specialized inspector utilities:
 
@@ -380,7 +399,7 @@ console.log(formatInspection("prompt", promptAnalysis));
 
 ---
 
-### 12. Actionable Diagnostic Errors
+### 13. Actionable Diagnostic Errors
 
 Every error thrown by Agent SDK follows a strict 3-part diagnostic format:
 1. **What Happened**: Clear explanation of the failure.
@@ -411,6 +430,7 @@ Run any example directly using `npx tsx`:
 | `examples/06_multi_agent_handoff_agent.ts` | Multi-agent delegation, context transfer & handoff loop protection | `npx tsx examples/06_multi_agent_handoff_agent.ts` |
 | `examples/07_events_tracing_agent.ts` | Typed runtime event emitter, `runId` tracing & inspector inspection | `npx tsx examples/07_events_tracing_agent.ts` |
 | `examples/08_explain_mode_agent.ts` | Explain Mode execution summary, `result.explain()`, Markdown & JSON | `npx tsx examples/08_explain_mode_agent.ts` |
+| `examples/09_session_replay_agent.ts` | Deterministic Session Replay playback, `result.replay()`, Markdown & JSON | `npx tsx examples/09_session_replay_agent.ts` |
 
 ---
 

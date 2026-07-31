@@ -12,15 +12,18 @@ import { generateRunId } from "./events/emitter.js";
 import { generateExplanation } from "./explain/explain.js";
 import { formatExplainConsole, formatExplainMarkdown } from "./explain/formatter.js";
 import { ExplainFunction } from "./explain/types.js";
+import { reconstructReplay } from "./replay/replay.js";
+import { formatReplayConsole, formatReplayMarkdown } from "./replay/formatter.js";
+import { ReplayFunction } from "./replay/types.js";
 import { ExplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
- * @description Pure functional agent execution loop orchestrator managing Explain Mode, events, guardrails, resiliency, and memory sessions.
+ * @description Pure functional agent execution loop orchestrator managing Session Replay, Explain Mode, events, guardrails, resiliency, and memory sessions.
  */
 
 /**
- * Executes the core agent completion loop, attaching Explain Mode telemetry, emitting lifecycle events,
+ * Executes the core agent completion loop, attaching Session Replay and Explain Mode helpers, emitting lifecycle events,
  * enforcing input guardrails, transient error retries, request timeouts, tool cycle loop detection, and multi-agent handoffs.
  * 
  * @param agent The target Agent instance.
@@ -276,7 +279,8 @@ export async function runAgentLoop(
                 handoffChain: newChain,
                 history: targetResult.history,
                 explanation: targetResult.explanation,
-                explain: targetResult.explain
+                explain: targetResult.explain,
+                replay: targetResult.replay
             };
         }
 
@@ -317,7 +321,7 @@ export async function runAgentLoop(
 
         const durationMs = Date.now() - startTime;
 
-        // 10. Generate Explain Mode Telemetry Payload
+        // 10. Generate Explain Mode & Session Replay Telemetry Helpers
         const explanation = generateExplanation(response.session, { handoffChain, runId });
 
         const explainFn: ExplainFunction = Object.assign(
@@ -330,10 +334,22 @@ export async function runAgentLoop(
             }
         );
 
-        // Print automatic explanation if explain: true was passed
         if (options.explain) {
             explainFn();
         }
+
+        // Reconstruct Session Replay Data (0 side effects, 0 re-executions)
+        const replayData = reconstructReplay(response.session);
+
+        const replayFn: ReplayFunction = Object.assign(
+            () => {
+                console.log(formatReplayConsole(replayData));
+            },
+            {
+                markdown: () => formatReplayMarkdown(replayData),
+                json: () => replayData
+            }
+        );
 
         // Emit "onRunComplete" event
         await agent.emitter.emit("onRunComplete", {
@@ -355,7 +371,8 @@ export async function runAgentLoop(
             handoffChain: handoffChain,
             history: updatedHistory,
             explanation: explanation,
-            explain: explainFn
+            explain: explainFn,
+            replay: replayFn
         };
 
     } catch (error: any) {
