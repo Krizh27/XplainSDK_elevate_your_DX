@@ -1,25 +1,27 @@
 import { AgentConfig, AgentRunOptions, AgentRunResult, AgentTool } from "./types.js";
+import { StorageAdapter } from "./memory/types.js";
 import { runAgentLoop } from "./runner.js";
 
 /**
  * @class Agent
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
- * An `Agent` encapsulates an agent identity name, system instructions, model,
- * tools, and provider options. Execution is delegated to `runAgentLoop()` which
- * uses ExplainSDK under the hood for request timelines, cost tracking, and flight recording.
+ * An `Agent` encapsulates identity name, instructions, model, tools, options,
+ * and persistent `memory` storage adapters. Execution is delegated to `runAgentLoop()`.
  * 
  * @example
  * ```typescript
+ * const memory = new FileStorageAdapter({ storageDir: "./my_sessions" });
+ * 
  * const agent = new Agent({
- *   name: "AssistantAgent",
- *   instructions: "You are a helpful assistant.",
+ *   name: "SupportAgent",
+ *   instructions: "You are a customer support agent.",
  *   model: "gpt-4o-mini",
- *   apiKey: process.env.OPENAI_API_KEY
+ *   apiKey: process.env.OPENAI_API_KEY,
+ *   memory
  * });
  * 
- * const result = await agent.run({ input: "Hello!" });
- * console.log(result.output_text);
+ * const res = await agent.run({ input: "My name is Alice", sessionId: "user_1" });
  * ```
  */
 export class Agent {
@@ -31,6 +33,7 @@ export class Agent {
     public readonly streamSpeed: any;
     public readonly maxIterations: number;
     public readonly tools: AgentTool[];
+    public readonly memory?: StorageAdapter;
 
     /**
      * Instantiates a new Agent instance.
@@ -64,13 +67,14 @@ export class Agent {
         this.streamSpeed = config.streamSpeed || "instant";
         this.maxIterations = config.maxIterations || 10;
         this.tools = config.tools || [];
+        this.memory = config.memory;
     }
 
     /**
-     * Executes an agent run with the given prompt input.
+     * Executes an agent run with the given prompt input and optional sessionId.
      * 
-     * @param options Run options containing user `input` string and optional overrides.
-     * @returns Promise resolving to `AgentRunResult` containing output text and ExplainSDK `session`.
+     * @param options Run options containing user `input` string, optional `sessionId`, and overrides.
+     * @returns Promise resolving to `AgentRunResult` containing output text, updated memory history, and ExplainSDK `session`.
      */
     public async run(options: AgentRunOptions): Promise<AgentRunResult> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {

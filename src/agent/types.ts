@@ -1,26 +1,16 @@
-import { StreamSpeedPreset, SessionRecord, StreamRenderingOptions } from "../types.js";
+import { StreamSpeedPreset, SessionRecord } from "../types.js";
+import { StorageAdapter, AgentMessage } from "./memory/types.js";
 
 /**
  * @file agent/types.ts
  * @description Centralized TypeScript interface contracts and configuration schemas for the Agent SDK.
  */
 
-/**
- * Interface contract defining an executable agent tool.
- * 
- * @template TArgs Type of argument object passed to the execute function.
- * @template TResult Return type of the tool execution function.
- */
 export interface AgentTool<TArgs = Record<string, any>, TResult = any> {
-    /** Unique name identifier for the tool. */
     name: string;
-    /** Clear description explaining what the tool does to the LLM model. */
     description: string;
-    /** Optional Zod schema or JSON schema definition for argument validation. */
     schema?: any;
-    /** Optional raw JSON parameter schema. */
     parameters?: Record<string, any>;
-    /** Execution function invoked when the model calls this tool. */
     execute: (args: TArgs) => Promise<TResult> | TResult;
 }
 
@@ -51,6 +41,9 @@ export interface AgentConfig {
 
     /** List of tools available to this agent. */
     tools?: AgentTool[];
+
+    /** Optional persistent memory storage adapter implementation. */
+    memory?: StorageAdapter;
 }
 
 /**
@@ -60,6 +53,9 @@ export interface AgentRunOptions {
     /** The user prompt or instruction string for the agent run. */
     input: string;
 
+    /** Optional session ID for loading and saving multi-turn conversation memory. */
+    sessionId?: string;
+
     /** Optional model override for this specific run. */
     model?: string;
 
@@ -67,6 +63,18 @@ export interface AgentRunOptions {
     streamSpeed?: StreamSpeedPreset;
 
     /** Optional provider-specific parameters passed directly to provider SDK. */
+    providerOptions?: Record<string, any>;
+}
+
+/**
+ * Transient execution context constructed per agent run.
+ */
+export interface RunContext {
+    sessionId?: string;
+    input: string;
+    history: AgentMessage[];
+    model: string;
+    streamSpeed?: StreamSpeedPreset;
     providerOptions?: Record<string, any>;
 }
 
@@ -85,4 +93,7 @@ export interface AgentRunResult {
 
     /** Name of the agent that produced this response. */
     agentName: string;
+
+    /** Complete array of loaded and updated conversation messages for this session. */
+    history?: AgentMessage[];
 }
