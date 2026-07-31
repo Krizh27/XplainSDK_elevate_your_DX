@@ -2,7 +2,7 @@
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
-XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, and **Session Replay**.
+XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, **Session Replay**, and **Interactive HTML Reports**.
 
 ---
 
@@ -23,8 +23,9 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
   - [9. Runtime Event Emitter & Tracing](#9-runtime-event-emitter--tracing)
   - [10. Explain Mode (Executive Summaries)](#10-explain-mode-executive-summaries)
   - [11. Session Replay (Step-by-Step Reconstruction)](#11-session-replay-step-by-step-reconstruction)
-  - [12. XplainSDK Inspector Framework](#12-xplainsdk-inspector-framework)
-  - [13. Actionable Diagnostic Errors](#13-actionable-diagnostic-errors)
+  - [12. Interactive HTML Reports (Standalone report.html)](#12-interactive-html-reports-standalone-reporthtml)
+  - [13. XplainSDK Inspector Framework](#13-xplainsdk-inspector-framework)
+  - [14. Actionable Diagnostic Errors](#14-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
 - [License](#-license)
 
@@ -62,7 +63,7 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
 
 1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `XplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
 2. **Single Class Rule**: `Agent` and `XplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
-3. **Zero Re-Execution**: **Session Replay** operates 100% deterministically on recorded `SessionRecord` flight recorder objects with zero side effects, never re-calling APIs or re-executing tools.
+3. **Zero Dependencies & Standalone Reports**: **Interactive HTML Reports** generate single, self-contained `.html` dashboard files (`report.html`) with embedded CSS/JS, dark mode, search bar, copy buttons, and sticky navigation—requiring zero CDNs, zero frameworks, and zero backend servers.
 
 ---
 
@@ -97,14 +98,13 @@ const agent = new Agent({
     tools: [weatherTool]
 });
 
-// 3. Execute agent run
+// 3. Execute agent run & generate HTML report
 const result = await agent.run({ input: "What is the weather in Surat today?" });
 
 console.log(result.output_text);
 
-// Session Replay & Explain Mode API
-result.replay();   // Step-by-step console playback
-result.explain();  // Executive summary box
+// Generate standalone HTML report
+await result.report({ outputPath: "./report.html" });
 ```
 
 ---
@@ -343,39 +343,30 @@ const markdownReplay = result.replay.markdown();
 
 // Option 3: Structured Replay Steps Data
 const replayData = result.replay.json();
-console.log(replayData.steps[0].title);
-
-// Option 4: Direct agent replay inspection
-const replay = agent.replay(result.session);
-```
-
-#### Terminal Console Replay Output Example:
-```text
-────────────────────────────────────────────────────────────
-🎬 Session Replay (Session: sess_1722438000_abc123)
-Provider: OPENAI | Model: gpt-4o-mini | Steps: 3
-────────────────────────────────────────────────────────────
-
-STEP 1 [USER_INPUT] ▶ User Prompt Input Received
-  Input: "Search the KB for password reset steps."
-
-STEP 2 [TOOL_EXECUTION] ✓ Tool Called: search_kb()
-  Arguments: {"query":"password reset"}
-  Duration:  14 ms
-  Result:    {"title":"Reset Password Guide"}
-
-STEP 3 [RESPONSE] ✓ Assistant Final Response Produced
-  Output: "Here is the guide for resetting your password..."
-  Tokens: 210 | Cost: $0.00003
-
-────────────────────────────────────────────────────────────
-🏁 Replay Complete (480 ms Total Duration)
-────────────────────────────────────────────────────────────
 ```
 
 ---
 
-### 12. XplainSDK Inspector Framework
+### 12. Interactive HTML Reports (Standalone report.html)
+
+Generate a single self-contained, interactive HTML developer dashboard (`report.html`) complete with dark mode, search filter, sticky sidebar navigation, collapsible JSON, and copy buttons—without requiring any external CDNs or backend server!
+
+```typescript
+const result = await agent.run({ input: "Calculate discount on item" });
+
+// Option 1: Save standalone HTML report to disk
+await result.report({ outputPath: "./agent_report.html" });
+
+// Option 2: Get raw HTML string
+const htmlString = result.report.html();
+
+// Option 3: Direct agent report generation
+await agent.generateReport(result.session, { outputPath: "./report.html" });
+```
+
+---
+
+### 13. XplainSDK Inspector Framework
 
 Inspect any `SessionRecord` using specialized inspector utilities:
 
@@ -399,7 +390,7 @@ console.log(formatInspection("prompt", promptAnalysis));
 
 ---
 
-### 13. Actionable Diagnostic Errors
+### 14. Actionable Diagnostic Errors
 
 Every error thrown by Agent SDK follows a strict 3-part diagnostic format:
 1. **What Happened**: Clear explanation of the failure.
@@ -431,6 +422,7 @@ Run any example directly using `npx tsx`:
 | `examples/07_events_tracing_agent.ts` | Typed runtime event emitter, `runId` tracing & inspector inspection | `npx tsx examples/07_events_tracing_agent.ts` |
 | `examples/08_explain_mode_agent.ts` | Explain Mode execution summary, `result.explain()`, Markdown & JSON | `npx tsx examples/08_explain_mode_agent.ts` |
 | `examples/09_session_replay_agent.ts` | Deterministic Session Replay playback, `result.replay()`, Markdown & JSON | `npx tsx examples/09_session_replay_agent.ts` |
+| `examples/10_html_report_agent.ts` | Standalone Interactive HTML Report generation (`report.html`) | `npx tsx examples/10_html_report_agent.ts` |
 
 ---
 

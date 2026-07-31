@@ -4,6 +4,7 @@ import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/
 import { Agent } from "./agent.js";
 import { AgentExplanation, ExplainFunction } from "./explain/types.js";
 import { ReplayData, ReplayFunction } from "./replay/types.js";
+import { ReportOptions, ReportFunction } from "./report/types.js";
 import {
     RunStartPayload,
     ToolStartPayload,
@@ -178,4 +179,7 @@ export interface AgentRunResult {
 
     /** Callable ReplayFunction: invoke `result.replay()` for step-by-step playback, `.markdown()` for report, `.json()` for data. */
     replay: ReplayFunction;
+
+    /** Callable ReportFunction: invoke `await result.report({ outputPath })` to generate HTML report file or `.html()` for raw string. */
+    report: ReportFunction;
 }

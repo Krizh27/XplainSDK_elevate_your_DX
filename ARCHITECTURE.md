@@ -51,33 +51,39 @@
 | **Agent Phase 7** | Runtime Event Emitter & XplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed |
 | **Agent Phase 8** | Production-Quality Documentation, Examples Suite & NPM Package Polish | ✅ Completed |
 | **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed |
-| **Agent Phase 10**| Session Replay Engine (`result.replay()`, Step-by-Step Reconstruction, Zero Side Effects) | ✅ Completed (Current) |
+| **Agent Phase 10**| Session Replay Engine (`result.replay()`, Step-by-Step Reconstruction, Zero Side Effects) | ✅ Completed |
+| **Agent Phase 12**| Interactive Standalone HTML Report Generator (`result.report()`, `report.html`, Zero CDNs) | ✅ Completed (Current) |
 
 ---
 
-## 🎬 Session Replay Architecture (Agent Phase 10)
+## 📄 Interactive HTML Report Architecture (Agent Phase 12)
 
 ```text
-                        XplainSDK Session Record
+                       XplainSDK Session Record
                                    │
                                    ▼
-                    reconstructReplay(session)  [src/agent/replay/replay.ts]
+                    generateHTMLReport(session)  [src/agent/report/report.ts]
+                                   │
+            ┌──────────────────────┼──────────────────────┐
+            ▼                      ▼                      ▼
+     renderHeader()        renderSummary()        renderTimeline()
+     renderTools()         renderAdvisors()       renderMetrics()
+     renderGuardrails()    renderHandoffs()       renderRawJSON()
                                    │
                                    ▼
-                             ReplayData Payload
-                      ┌────────────┴────────────┐
-                      ▼                         ▼
-            formatReplayConsole()     formatReplayMarkdown()
+                  compileHTMLDocument(components)  [src/agent/report/htmlTemplate.ts]
+                                   │
+                                   ▼
+                        Standalone report.html File
 ```
 
 ### Key Principles Implemented
-1. **Zero Re-Execution Guarantee**: Session Replay operates 100% deterministically on recorded `SessionRecord` telemetry. It **never** invokes network APIs, re-executes providers, or reruns tools.
+1. **Zero External Dependencies**: Embedded CSS styles and client-side JavaScript interactions (dark mode toggle, search bar, copy buttons, sticky navigation) into a single self-contained `.html` document string.
 2. **First-Class Developer API**:
-   - `result.replay()` (Pretty step-by-step terminal playback)
-   - `result.replay.markdown()` (Formatted markdown report)
-   - `result.replay.json()` (Structured `ReplayData` steps array)
-   - `agent.replay(session)` or `agent.replay(result)`
-3. **Deterministic Step Reconstruction**: Reconstructs complete request lifecycle into chronological steps (User Input $\rightarrow$ Tool Executions $\rightarrow$ Handoffs $\rightarrow$ Final Output).
+   - `await result.report({ outputPath: "./report.html" })`
+   - `const html = result.report.html()`
+   - `await agent.generateReport(session, { outputPath: "./report.html" })`
+3. **Zero Re-Execution**: Operates 100% deterministically on recorded `SessionRecord` telemetry.
 
 ---
 
@@ -92,6 +98,7 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── README.md             # Production-grade user documentation & API reference
 ├── test.ts               # Interactive XplainSDK test script
 ├── test_agent.ts         # Agent SDK Phase 1 test script
+├── test_all_features.ts  # 36-Test Comprehensive Feature Suite
 ├── examples/
 │   ├── 01_quickstart_agent.ts         # Quickstart example
 │   ├── 02_memory_agent.ts         # Multi-turn memory example
@@ -101,7 +108,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   ├── 06_multi_agent_handoff_agent.ts # Multi-Agent Handoff example
 │   ├── 07_events_tracing_agent.ts # Events & Tracing example
 │   ├── 08_explain_mode_agent.ts   # Explain Mode example
-│   └── 09_session_replay_agent.ts # [NEW IN AGENT PHASE 10] Session Replay example
+│   ├── 09_session_replay_agent.ts # Session Replay example
+│   └── 10_html_report_agent.ts   # [NEW IN AGENT PHASE 12] HTML Report example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # XplainSDK CLASS
@@ -120,5 +128,11 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── handoff/      # Multi-Agent Handoffs & Loop Prevention
         ├── events/       # Runtime Events & Tracing
         ├── explain/      # Explain Mode Orchestrator
-        └── replay/       # Session Replay Engine
+        ├── replay/       # Session Replay Engine
+        └── report/       # [NEW IN AGENT PHASE 12]
+            ├── types.ts       # ReportOptions, ReportFunction
+            ├── htmlTemplate.ts# EMBEDDED_CSS & EMBEDDED_JS
+            ├── renderer.ts    # Section component renderers
+            ├── report.ts      # generateHTMLReport() & saveHTMLReport()
+            └── index.ts       # Report exports
 ```

@@ -36,8 +36,9 @@ export function isTransientError(error: any): boolean {
         return true;
     }
 
-    // Check timeout error messages
-    if (errorMessage.toLowerCase().includes("timeout") || errorMessage.toLowerCase().includes("socket hang up")) {
+    // Check timeout or rate limit error messages
+    const lower = errorMessage.toLowerCase();
+    if (lower.includes("timeout") || lower.includes("socket hang up") || lower.includes("rate limit") || errorMessage.includes("429") || errorMessage.includes("500") || errorMessage.includes("503")) {
         return true;
     }
 

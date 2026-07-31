@@ -15,15 +15,17 @@ import { ExplainFunction } from "./explain/types.js";
 import { reconstructReplay } from "./replay/replay.js";
 import { formatReplayConsole, formatReplayMarkdown } from "./replay/formatter.js";
 import { ReplayFunction } from "./replay/types.js";
+import { generateHTMLReport, saveHTMLReport } from "./report/report.js";
+import { ReportOptions, ReportFunction } from "./report/types.js";
 import { XplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
- * @description Pure functional agent execution loop orchestrator managing Session Replay, Explain Mode, events, guardrails, resiliency, and memory sessions.
+ * @description Pure functional agent execution loop orchestrator managing HTML Reports, Session Replay, Explain Mode, events, guardrails, resiliency, and memory sessions.
  */
 
 /**
- * Executes the core agent completion loop, attaching Session Replay and Explain Mode helpers, emitting lifecycle events,
+ * Executes the core agent completion loop, attaching HTML Report, Session Replay, and Explain Mode helpers, emitting lifecycle events,
  * enforcing input guardrails, transient error retries, request timeouts, tool cycle loop detection, and multi-agent handoffs.
  * 
  * @param agent The target Agent instance.
@@ -104,7 +106,7 @@ export async function runAgentLoop(
         let pendingHandoffTarget: Agent | null = null;
         let pendingHandoffReason: string | undefined = undefined;
 
-        // 4. Register regular tools and Handoff transfer tools into ExplainSDK
+        // 4. Register regular tools and Handoff transfer tools into XplainSDK
         const allTools = [...(agent.tools || [])];
 
         if (agent.handoffs && agent.handoffs.length > 0) {
@@ -223,7 +225,7 @@ export async function runAgentLoop(
         contextLines.push(`\nUser Input: ${validatedInput}`);
         const formattedPrompt = contextLines.join("\n");
 
-        // 6. Delegate completion execution turn to ExplainSDK wrapped with Retry Engine & Timeout
+        // 6. Delegate completion execution turn to XplainSDK wrapped with Retry Engine & Timeout
         const response = await withRetryAndTimeout(
             async () => {
                 return await sdk.chat({
@@ -280,7 +282,8 @@ export async function runAgentLoop(
                 history: targetResult.history,
                 explanation: targetResult.explanation,
                 explain: targetResult.explain,
-                replay: targetResult.replay
+                replay: targetResult.replay,
+                report: targetResult.report
             };
         }
 
@@ -321,7 +324,7 @@ export async function runAgentLoop(
 
         const durationMs = Date.now() - startTime;
 
-        // 10. Generate Explain Mode & Session Replay Telemetry Helpers
+        // 10. Generate Explain Mode, Session Replay & HTML Report Telemetry Helpers
         const explanation = generateExplanation(response.session, { handoffChain, runId });
 
         const explainFn: ExplainFunction = Object.assign(
@@ -338,7 +341,6 @@ export async function runAgentLoop(
             explainFn();
         }
 
-        // Reconstruct Session Replay Data (0 side effects, 0 re-executions)
         const replayData = reconstructReplay(response.session);
 
         const replayFn: ReplayFunction = Object.assign(
@@ -348,6 +350,16 @@ export async function runAgentLoop(
             {
                 markdown: () => formatReplayMarkdown(replayData),
                 json: () => replayData
+            }
+        );
+
+        const reportFn: ReportFunction = Object.assign(
+            async (opts?: ReportOptions) => {
+                const targetPath = opts?.outputPath || "./report.html";
+                return await saveHTMLReport(response.session, { ...opts, outputPath: targetPath, handoffChain, runId });
+            },
+            {
+                html: () => generateHTMLReport(response.session, { handoffChain, runId })
             }
         );
 
@@ -372,7 +384,8 @@ export async function runAgentLoop(
             history: updatedHistory,
             explanation: explanation,
             explain: explainFn,
-            replay: replayFn
+            replay: replayFn,
+            report: reportFn
         };
 
     } catch (error: any) {

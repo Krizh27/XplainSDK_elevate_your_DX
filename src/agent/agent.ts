@@ -9,6 +9,8 @@ import { AgentExplanation } from "./explain/types.js";
 import { generateExplanation } from "./explain/explain.js";
 import { ReplayData } from "./replay/types.js";
 import { reconstructReplay } from "./replay/replay.js";
+import { ReportOptions } from "./report/types.js";
+import { saveHTMLReport } from "./report/report.js";
 import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
 import { SessionRecord } from "../types.js";
@@ -19,7 +21,7 @@ import { SessionRecord } from "../types.js";
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
  * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`,
- * runtime event emitter (`.on()`), Explain Mode (`agent.explain()`), Session Replay (`agent.replay()`), and structured output execution.
+ * runtime event emitter (`.on()`), Explain Mode (`agent.explain()`), Session Replay (`agent.replay()`), Interactive HTML Report (`agent.generateReport()`), and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -114,10 +116,7 @@ export class Agent {
     }
 
     /**
-     * Synthesizes an executive summary AgentExplanation payload for an agent run result or ExplainSDK SessionRecord.
-     * 
-     * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
-     * @returns Structured AgentExplanation object.
+     * Synthesizes an executive summary AgentExplanation payload for an agent run result or SessionRecord.
      */
     public explain(sessionOrResult: SessionRecord | AgentRunResult): AgentExplanation {
         if (!sessionOrResult) {
@@ -132,17 +131,6 @@ export class Agent {
 
     /**
      * Reconstructs a step-by-step execution timeline array from a recorded SessionRecord or AgentRunResult.
-     * 
-     * Zero Side Effects: Does NOT invoke LLM providers or rerun tool functions.
-     * 
-     * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
-     * @returns Structured ReplayData object.
-     * 
-     * @example
-     * ```typescript
-     * const replayData = agent.replay(result);
-     * console.log(replayData.totalSteps);
-     * ```
      */
     public replay(sessionOrResult: SessionRecord | AgentRunResult): ReplayData {
         if (!sessionOrResult) {
@@ -154,10 +142,29 @@ export class Agent {
     }
 
     /**
-     * Executes an agent run with the given prompt input and optional sessionId.
+     * Generates a standalone interactive HTML report document and optionally saves it to disk.
      * 
-     * @param options Run options containing user `input` string, optional `sessionId`, and overrides.
-     * @returns Promise resolving to `AgentRunResult` containing runId, output text, active agent name, delegation chain, and ExplainSDK `session`.
+     * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
+     * @param options Report configuration options.
+     * @returns Promise resolving to the generated HTML string.
+     */
+    public async generateReport(
+        sessionOrResult: SessionRecord | AgentRunResult,
+        options?: ReportOptions
+    ): Promise<string> {
+        if (!sessionOrResult) {
+            throw new Error(`[AgentSDK Error] Missing SessionRecord or AgentRunResult argument in agent.generateReport().`);
+        }
+
+        const session = "session" in sessionOrResult ? sessionOrResult.session : (sessionOrResult as SessionRecord);
+        const handoffChain = "handoffChain" in sessionOrResult ? (sessionOrResult as AgentRunResult).handoffChain : undefined;
+        const runId = "runId" in sessionOrResult ? (sessionOrResult as AgentRunResult).runId : undefined;
+
+        return await saveHTMLReport(session, { ...options, handoffChain, runId });
+    }
+
+    /**
+     * Executes an agent run with the given prompt input and optional sessionId.
      */
     public async run(options: AgentRunOptions): Promise<AgentRunResult> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {
