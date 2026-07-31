@@ -61,6 +61,15 @@ export interface AgentConfig {
 
     /** Optional callback invoked when a tool marked `requiresApproval: true` requests execution. */
     onApprovalRequired?: ApprovalCallback;
+
+    /** Maximum retry attempts for transient errors. @default 3 */
+    retries?: number;
+
+    /** Per-turn execution timeout limit in milliseconds. @default 30000 */
+    timeoutMs?: number;
+
+    /** Maximum allowed consecutive repetitions of identical tool calls before triggering loop error. @default 3 */
+    maxToolLoopThreshold?: number;
 }
 
 /**

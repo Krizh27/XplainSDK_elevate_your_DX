@@ -8,7 +8,7 @@ import { runAgentLoop } from "./runner.js";
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
- * guardrails (`inputGuardrails`, `outputGuardrails`), and human approval callbacks (`onApprovalRequired`).
+ * guardrails, human approval callbacks, and resiliency policies (`retries`, `timeoutMs`, `maxToolLoopThreshold`).
  */
 export class Agent {
     public readonly name: string;
@@ -23,6 +23,9 @@ export class Agent {
     public readonly inputGuardrails?: InputGuardrail[];
     public readonly outputGuardrails?: OutputGuardrail[];
     public readonly onApprovalRequired?: ApprovalCallback;
+    public readonly retries: number;
+    public readonly timeoutMs: number;
+    public readonly maxToolLoopThreshold: number;
 
     /**
      * Instantiates a new Agent instance.
@@ -60,6 +63,9 @@ export class Agent {
         this.inputGuardrails = config.inputGuardrails;
         this.outputGuardrails = config.outputGuardrails;
         this.onApprovalRequired = config.onApprovalRequired;
+        this.retries = config.retries !== undefined ? config.retries : 3;
+        this.timeoutMs = config.timeoutMs !== undefined ? config.timeoutMs : 30000;
+        this.maxToolLoopThreshold = config.maxToolLoopThreshold !== undefined ? config.maxToolLoopThreshold : 3;
     }
 
     /**

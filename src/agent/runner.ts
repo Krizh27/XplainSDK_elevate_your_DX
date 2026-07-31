@@ -3,16 +3,19 @@ import { AgentRunOptions, AgentRunResult, RunContext } from "./types.js";
 import { AgentMessage } from "./memory/types.js";
 import { loadSessionHistory, saveSessionHistory } from "./memory/memoryManager.js";
 import { runInputGuardrails, runOutputGuardrails } from "./guardrails/pipeline.js";
+import { withRetryAndTimeout } from "./resiliency/retry.js";
+import { detectToolLoop } from "./resiliency/loopDetector.js";
+import { ToolCallSignature } from "./resiliency/types.js";
 import { ExplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
- * @description Pure functional agent execution loop orchestrator managing guardrails, human approval callbacks, and persistent memory sessions.
+ * @description Pure functional agent execution loop orchestrator managing guardrails, resiliency wrappers, and memory sessions.
  */
 
 /**
- * Executes the core agent completion loop, enforcing input guardrails before start,
- * handling Human-in-the-Loop tool approvals, and enforcing output guardrails before completion.
+ * Executes the core agent completion loop, enforcing input guardrails, transient error retries,
+ * request timeouts, tool cycle loop detection, and output guardrails.
  * 
  * @param agent The target Agent instance.
  * @param options Run options containing user prompt input and optional sessionId.
@@ -22,7 +25,7 @@ export async function runAgentLoop(
     agent: Agent,
     options: AgentRunOptions
 ): Promise<AgentRunResult> {
-    // 1. Run Input Guardrails BEFORE runtime loop starts
+    // 1. Run Input Guardrails BEFORE runtime loop starts (Fail Fast, Zero Retries)
     const validatedInput = await runInputGuardrails(options.input, agent.name, agent.inputGuardrails);
 
     const selectedModel = options.model || agent.model;
@@ -48,7 +51,10 @@ export async function runAgentLoop(
         streamSpeed: activeStreamSpeed
     });
 
-    // 4. Register agent tools into ExplainSDK with Human-in-the-Loop Approval wrappers
+    // Track tool call signatures executed during this run to detect loops
+    const executedToolCalls: ToolCallSignature[] = [];
+
+    // 4. Register agent tools into ExplainSDK with Loop Detection and Human Approval wrappers
     if (agent.tools && agent.tools.length > 0) {
         for (const tool of agent.tools) {
             sdk.registerTool({
@@ -56,7 +62,16 @@ export async function runAgentLoop(
                 description: tool.description,
                 parameters: tool.parameters,
                 execute: async (args: any) => {
-                    // Check if human approval is required
+                    const currentToolCall: ToolCallSignature = {
+                        toolName: tool.name,
+                        args: args || {}
+                    };
+
+                    // Detect tool cycle loops BEFORE execution
+                    detectToolLoop(executedToolCalls, currentToolCall, agent.maxToolLoopThreshold);
+                    executedToolCalls.push(currentToolCall);
+
+                    // Check Human-in-the-Loop approval
                     if (tool.requiresApproval) {
                         if (agent.onApprovalRequired) {
                             const isApproved = await agent.onApprovalRequired({
@@ -66,7 +81,6 @@ export async function runAgentLoop(
                             });
 
                             if (!isApproved) {
-                                // Safe rejection: return message to model without crashing conversation
                                 return `[Approval Denied] Execution of tool '${tool.name}' was explicitly denied by human operator. Please inform the user and proceed without executing this tool action.`;
                             }
                         }
@@ -96,13 +110,22 @@ export async function runAgentLoop(
     contextLines.push(`\nUser Input: ${validatedInput}`);
     const formattedPrompt = contextLines.join("\n");
 
-    // 6. Delegate completion execution turn to ExplainSDK
-    const response = await sdk.chat({
-        input: formattedPrompt,
-        model: selectedModel,
-        streamSpeed: activeStreamSpeed,
-        providerOptions: options.providerOptions
-    });
+    // 6. Delegate completion execution turn to ExplainSDK wrapped with Retry Engine & Timeout
+    const response = await withRetryAndTimeout(
+        async () => {
+            return await sdk.chat({
+                input: formattedPrompt,
+                model: selectedModel,
+                streamSpeed: activeStreamSpeed,
+                providerOptions: options.providerOptions
+            });
+        },
+        {
+            retries: agent.retries,
+            timeoutMs: agent.timeoutMs
+        },
+        `Agent "${agent.name}" LLM Request`
+    );
 
     // 7. Run Output Guardrails AFTER LLM completion generation
     const validatedOutput = await runOutputGuardrails(response.output_text, agent.name, agent.outputGuardrails);
