@@ -46,39 +46,38 @@
 | **Agent Phase 2** | Persistent Memory & Storage Adapters (`StorageAdapter`, `InMemoryStorageAdapter`, `FileStorageAdapter`) | ✅ Completed |
 | **Agent Phase 3** | Guardrails & Human-in-the-Loop Approval (`inputGuardrails`, `outputGuardrails`, `onApprovalRequired`) | ✅ Completed |
 | **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed |
-| **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed (Current) |
+| **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed |
+| **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed (Current) |
 
 ---
 
-## 📐 Structured Output & Schema Repair Architecture (Agent Phase 5)
+## 🤝 Multi-Agent Handoff Architecture (Agent Phase 6)
 
 ```text
-agent.runStructured({ input, schema: UserProfileSchema })
-                       │
-                       ▼
- 1. Execute LLM completion with JSON response formatting
-                       │
-                       ▼
- 2. Clean text & parse with schema.safeParse(json)
-                       │
-                       ├── Success? ──► Return { data: z.infer<TSchema>, session, repairAttempts: 0 }
-                       │
-                       └── Failure? (Validation Error)
-                             │
-                             ▼
- 3. Generate Schema Repair Prompt with Zod error details
-                             │
-                             ▼
- 4. Repair Retry Loop (Attempt 1..maxRepairAttempts)
-                             │
-                             ├── Fixed? ──► Return { data, repairAttempts }
-                             └── Exhausted? ──► Throw [AgentSDK Schema Validation Error]
+User Input ──► TriageAgent.run({ input, sessionId })
+                     │
+                     ▼
+          TriageAgent LLM loop
+                     │
+                     ▼ Model calls transfer_to_BillingAgent({ reason })
+          resolveHandoff(currentAgent, targetAgent, context, chain)
+                     │
+                     ├── 1. Check detectHandoffLoop(chain, targetAgent)
+                     │        └── Loop or depth > maxHandoffDepth? ──► Throw [AgentSDK Handoff Loop Error]
+                     │
+                     ├── 2. Log timeline event in ExplainSDK ("agent_handoff", { from, to, reason })
+                     │
+                     └── 3. Transfer history & execute BillingAgent.run({ input, sessionId, history })
+                              │
+                              ▼
+                     Return AgentRunResult { activeAgentName: "BillingAgent", output_text, session }
 ```
 
 ### Key Principles Implemented
-1. **Strong TypeScript Inference (`z.infer<TSchema>`)**: Developer supplies Zod schema `schema: TSchema`, and SDK guarantees strongly-typed `result.data`.
-2. **Automated Schema Repair Loop**: Validates completions with `schema.safeParse(json)`. If validation fails, Agent SDK automatically constructs a diagnostic repair prompt detailing exact Zod validation error paths and retries completion up to `maxRepairAttempts` (default 3).
-3. **Provider JSON Mode Integration**: Automatically enables native JSON mode via `providerOptions: { response_format: { type: "json_object" } }`.
+1. **Multi-Agent Handoff Tool Generation**: Declaring `handoffs: [BillingAgent]` on `TriageAgent` automatically generates transfer tool `transfer_to_BillingAgent`.
+2. **Context History Transfer**: When control transfers from Agent A to Agent B, full conversation history, session ID, and memory are preserved intact.
+3. **ExplainSDK Telemetry**: Every handoff event is logged directly into ExplainSDK request timelines (`agent_handoff` timeline events).
+4. **Handoff Loop Prevention & Depth Bounds**: Tracks active agent delegation chain (`handoffChain`). If circular delegation (A $\rightarrow$ B $\rightarrow$ A) or maximum depth (`maxHandoffDepth`, default 5) is exceeded, halts delegation with an actionable 3-part diagnostic `[AgentSDK Handoff Loop Error]`.
 
 ---
 
@@ -96,7 +95,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   ├── 02_memory_agent.ts         # Multi-turn memory example
 │   ├── 03_guardrails_approval_agent.ts # Guardrails & Approval example
 │   ├── 04_resiliency_agent.ts     # Resiliency & Loop Detection example
-│   └── 05_structured_output_agent.ts   # [NEW IN AGENT PHASE 5] Structured Output example
+│   ├── 05_structured_output_agent.ts   # Structured Output example
+│   └── 06_multi_agent_handoff_agent.ts # [NEW IN AGENT PHASE 6] Multi-Agent Handoff example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
@@ -111,8 +111,10 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── memory/       # Persistent Memory & Storage Adapters
         ├── guardrails/   # Guardrails & Human-in-the-Loop Approval
         ├── resiliency/   # Resiliency Engine & Loop Prevention
-        └── structured/   # [NEW IN AGENT PHASE 5]
-            ├── types.ts       # StructuredRunOptions, StructuredRunResult
-            ├── repair.ts      # executeStructuredOutput(), generateRepairPrompt()
-            └── index.ts       # Structured exports
+        ├── structured/   # Structured Outputs & Schema Repair
+        └── handoff/      # [NEW IN AGENT PHASE 6]
+            ├── types.ts       # HandoffPayload, HandoffResult
+            ├── tool.ts        # createHandoffTool()
+            ├── resolver.ts    # detectHandoffLoop()
+            └── index.ts       # Handoff exports
 ```

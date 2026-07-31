@@ -11,7 +11,7 @@ import { runAgentLoop } from "./runner.js";
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
- * guardrails, approval callbacks, resiliency policies, and structured output execution (`runStructured`).
+ * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`, and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -29,6 +29,8 @@ export class Agent {
     public readonly retries: number;
     public readonly timeoutMs: number;
     public readonly maxToolLoopThreshold: number;
+    public readonly handoffs: Agent[];
+    public readonly maxHandoffDepth: number;
 
     /**
      * Instantiates a new Agent instance.
@@ -69,13 +71,15 @@ export class Agent {
         this.retries = config.retries !== undefined ? config.retries : 3;
         this.timeoutMs = config.timeoutMs !== undefined ? config.timeoutMs : 30000;
         this.maxToolLoopThreshold = config.maxToolLoopThreshold !== undefined ? config.maxToolLoopThreshold : 3;
+        this.handoffs = config.handoffs || [];
+        this.maxHandoffDepth = config.maxHandoffDepth !== undefined ? config.maxHandoffDepth : 5;
     }
 
     /**
      * Executes an agent run with the given prompt input and optional sessionId.
      * 
      * @param options Run options containing user `input` string, optional `sessionId`, and overrides.
-     * @returns Promise resolving to `AgentRunResult` containing output text, updated memory history, and ExplainSDK `session`.
+     * @returns Promise resolving to `AgentRunResult` containing output text, active agent name, delegation chain, and ExplainSDK `session`.
      */
     public async run(options: AgentRunOptions): Promise<AgentRunResult> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {
@@ -92,22 +96,6 @@ export class Agent {
 
     /**
      * Executes a structured output extraction run, guaranteeing that the response conforms strictly to a Zod schema.
-     * Automatically executes repair retry loops if generated JSON fails Zod schema validation.
-     * 
-     * @template TSchema Zod schema type extending z.ZodTypeAny.
-     * @param options StructuredRunOptions containing `input` string and target Zod `schema`.
-     * @returns Promise resolving to strongly typed `StructuredRunResult<z.infer<TSchema>>`.
-     * 
-     * @example
-     * ```typescript
-     * const UserSchema = z.object({ name: z.string(), age: z.number() });
-     * 
-     * const result = await agent.runStructured({
-     *   input: "Extract user details: Alex is 28 years old.",
-     *   schema: UserSchema
-     * });
-     * console.log(result.data.name); // "Alex" (Strongly typed)
-     * ```
      */
     public async runStructured<TSchema extends z.ZodTypeAny>(
         options: StructuredRunOptions<TSchema>

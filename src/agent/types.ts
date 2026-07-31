@@ -1,6 +1,7 @@
 import { StreamSpeedPreset, SessionRecord } from "../types.js";
 import { StorageAdapter, AgentMessage } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
+import { Agent } from "./agent.js";
 
 /**
  * @file agent/types.ts
@@ -70,6 +71,12 @@ export interface AgentConfig {
 
     /** Maximum allowed consecutive repetitions of identical tool calls before triggering loop error. @default 3 */
     maxToolLoopThreshold?: number;
+
+    /** Optional target agents this agent can hand off control to. */
+    handoffs?: Agent[];
+
+    /** Maximum allowed delegation stack depth before triggering handoff loop error. @default 5 */
+    maxHandoffDepth?: number;
 }
 
 /**
@@ -90,6 +97,9 @@ export interface AgentRunOptions {
 
     /** Optional provider-specific parameters passed directly to provider SDK. */
     providerOptions?: Record<string, any>;
+
+    /** Internal delegation stack tracking active agent handoffs. */
+    handoffChain?: string[];
 }
 
 /**
@@ -102,6 +112,7 @@ export interface RunContext {
     model: string;
     streamSpeed?: StreamSpeedPreset;
     providerOptions?: Record<string, any>;
+    handoffChain: string[];
 }
 
 /**
@@ -119,6 +130,12 @@ export interface AgentRunResult {
 
     /** Name of the agent that produced this response. */
     agentName: string;
+
+    /** Name of the active agent that finalized the response (useful when handoffs occurred). */
+    activeAgentName: string;
+
+    /** Delegation chain showing handoff progression (e.g. ["TriageAgent", "BillingAgent"]). */
+    handoffChain: string[];
 
     /** Complete array of loaded and updated conversation messages for this session. */
     history?: AgentMessage[];
