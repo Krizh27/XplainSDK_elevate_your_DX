@@ -1,6 +1,6 @@
 /**
  * @file agent/index.ts
- * @description Barrel export file for Agent SDK core runtime components, Memory, Guardrails, Resiliency, Structured Outputs, Handoffs, Events, Explain Mode, Session Replay, and Interactive HTML Reports.
+ * @description Barrel export file for Agent SDK core runtime components, Memory, Guardrails, Resiliency, Structured Outputs, Handoffs, Events, Explain Mode, Session Replay, Interactive HTML Reports, and Smart Debug Assistant.
  */
 
 export { Agent } from "./agent.js";
@@ -16,3 +16,4 @@ export * from "./events/index.js";
 export * from "./explain/index.js";
 export * from "./replay/index.js";
 export * from "./report/index.js";
+export * from "./debug/index.js";

@@ -3,6 +3,7 @@ import { generateExplanation } from "../explain/explain.js";
 import { inspectPrompt } from "../../inspectors/prompt.js";
 import { inspectBehavior } from "../../inspectors/behavior.js";
 import { inspectPerformance } from "../../inspectors/performance.js";
+import { analyzeDebug } from "../debug/debug.js";
 
 /**
  * @file agent/report/renderer.ts
@@ -182,6 +183,32 @@ export function renderAdvisorsSection(session: SessionRecord): string {
         <ul style="list-style:none; display:flex; flex-direction:column; gap:0.25rem;">
             ${observationsHTML || "<li>No unexpected runtime behavioral anomalies detected.</li>"}
         </ul>
+    </div>`;
+}
+
+export function renderDebugSection(session: SessionRecord): string {
+    const debug = analyzeDebug(session);
+
+    let issuesHTML = (debug.detectedIssues || []).map(i => `<li>⚠️ ${escapeHTML(i)}</li>`).join("");
+    let recsHTML = (debug.nextInspections || []).map(r => `<li>🔍 <strong>[${escapeHTML(r.target)}]</strong> ${escapeHTML(r.reason)}<br><code>${escapeHTML(r.command)}</code></li>`).join("");
+    let tipsHTML = (debug.learningTips || []).map(t => `<li>🎓 ${escapeHTML(t)}</li>`).join("");
+
+    return `
+    <div class="card" id="debug-section">
+        <div class="card-title">
+            <span>🐞 Smart Debug Assistant</span>
+            <span class="badge badge-purple">DIAGNOSTIC MODE</span>
+        </div>
+        <p style="margin-bottom:1rem; color:var(--text-primary);">${escapeHTML(debug.summary)}</p>
+
+        ${issuesHTML ? `<h4 style="margin-bottom:0.5rem; color:var(--accent-red);">Detected Issues</h4><ul style="list-style:none; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.25rem;">${issuesHTML}</ul>` : ''}
+
+        <h4 style="margin-bottom:0.5rem; color:var(--accent-blue);">Recommended Next Inspection</h4>
+        <ul style="list-style:none; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.5rem;">
+            ${recsHTML}
+        </ul>
+
+        ${tipsHTML ? `<h4 style="margin-bottom:0.5rem; color:var(--accent-yellow);">Educational Learning Tips</h4><ul style="list-style:none; display:flex; flex-direction:column; gap:0.25rem;">${tipsHTML}</ul>` : ''}
     </div>`;
 }
 

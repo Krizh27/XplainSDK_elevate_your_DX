@@ -2,7 +2,7 @@
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
-XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, **Session Replay**, and **Interactive HTML Reports**.
+XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, **Session Replay**, **Interactive HTML Reports**, and **Smart Debug Assistant**.
 
 ---
 
@@ -24,8 +24,9 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
   - [10. Explain Mode (Executive Summaries)](#10-explain-mode-executive-summaries)
   - [11. Session Replay (Step-by-Step Reconstruction)](#11-session-replay-step-by-step-reconstruction)
   - [12. Interactive HTML Reports (Standalone report.html)](#12-interactive-html-reports-standalone-reporthtml)
-  - [13. XplainSDK Inspector Framework](#13-xplainsdk-inspector-framework)
-  - [14. Actionable Diagnostic Errors](#14-actionable-diagnostic-errors)
+  - [13. Smart Debug Assistant (Troubleshooting Guide)](#13-smart-debug-assistant-troubleshooting-guide)
+  - [14. XplainSDK Inspector Framework](#14-xplainsdk-inspector-framework)
+  - [15. Actionable Diagnostic Errors](#15-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
 - [License](#-license)
 
@@ -63,7 +64,7 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
 
 1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `XplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
 2. **Single Class Rule**: `Agent` and `XplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
-3. **Zero Dependencies & Standalone Reports**: **Interactive HTML Reports** generate single, self-contained `.html` dashboard files (`report.html`) with embedded CSS/JS, dark mode, search bar, copy buttons, and sticky navigation—requiring zero CDNs, zero frameworks, and zero backend servers.
+3. **Evidence-Based Debugging**: **Smart Debug Assistant** analyzes `SessionRecord` telemetry to answer *"What happened?"*, *"Why did it happen?"*, *"What should I inspect next?"*, and *"What can I improve?"* with zero unevidenced advice.
 
 ---
 
@@ -98,13 +99,13 @@ const agent = new Agent({
     tools: [weatherTool]
 });
 
-// 3. Execute agent run & generate HTML report
-const result = await agent.run({ input: "What is the weather in Surat today?" });
+// 3. Execute agent run & run Smart Debug Assistant
+const result = await agent.run({ input: "What is the weather in Surat today?", debug: true });
 
 console.log(result.output_text);
 
-// Generate standalone HTML report
-await result.report({ outputPath: "./report.html" });
+// First-class Debug API
+result.debug(); // Pretty terminal diagnostic box
 ```
 
 ---
@@ -359,14 +360,57 @@ await result.report({ outputPath: "./agent_report.html" });
 
 // Option 2: Get raw HTML string
 const htmlString = result.report.html();
-
-// Option 3: Direct agent report generation
-await agent.generateReport(result.session, { outputPath: "./report.html" });
 ```
 
 ---
 
-### 13. XplainSDK Inspector Framework
+### 13. Smart Debug Assistant (Troubleshooting Guide)
+
+Smart Debug Assistant analyzes execution facts to guide developers on root causes, recommended next inspectors, educational learning tips, and actionable suggestions.
+
+```typescript
+const result = await agent.run({ input: "What is the weather?", debug: true });
+
+// Option 1: Pretty terminal diagnostic box
+result.debug();
+
+// Option 2: Markdown diagnostic report
+const debugMd = result.debug.markdown();
+
+// Option 3: Structured DebugReport JSON data
+const debugReport = result.debug.json();
+console.log(debugReport.nextInspections[0].command);
+
+// Option 4: Direct agent debug analysis
+const report = agent.debug(result.session);
+```
+
+#### Terminal Console Debug Output Example:
+```text
+────────────────────────────────────────────────────────────
+🐞 Smart Debug Assistant Report
+────────────────────────────────────────────────────────────
+
+What Happened
+Request processed in 580 ms utilizing 214 tokens ($0.00003). No critical anomalies or failures were detected during execution.
+
+Detected Issues
+  ✓ No critical execution issues detected.
+
+Recommended Next Inspection
+  🔍 [Performance Inspector] Execution completed cleanly. Inspect performance and token metrics.
+     Command: const perfData = sdk.inspect.performance(result.session);
+
+Educational Learning Tips
+  🎓 Regular inspection of token usage helps optimize API dollar costs.
+
+Diagnostic Confidence: HIGH
+────────────────────────────────────────────────────────────
+```
+
+---
+
+### 14. XplainSDK Inspector Framework
 
 Inspect any `SessionRecord` using specialized inspector utilities:
 
@@ -390,7 +434,7 @@ console.log(formatInspection("prompt", promptAnalysis));
 
 ---
 
-### 14. Actionable Diagnostic Errors
+### 15. Actionable Diagnostic Errors
 
 Every error thrown by Agent SDK follows a strict 3-part diagnostic format:
 1. **What Happened**: Clear explanation of the failure.
@@ -423,6 +467,7 @@ Run any example directly using `npx tsx`:
 | `examples/08_explain_mode_agent.ts` | Explain Mode execution summary, `result.explain()`, Markdown & JSON | `npx tsx examples/08_explain_mode_agent.ts` |
 | `examples/09_session_replay_agent.ts` | Deterministic Session Replay playback, `result.replay()`, Markdown & JSON | `npx tsx examples/09_session_replay_agent.ts` |
 | `examples/10_html_report_agent.ts` | Standalone Interactive HTML Report generation (`report.html`) | `npx tsx examples/10_html_report_agent.ts` |
+| `examples/11_debug_assistant_agent.ts` | Smart Debug Assistant diagnostics, `result.debug()`, Markdown & JSON | `npx tsx examples/11_debug_assistant_agent.ts` |
 
 ---
 

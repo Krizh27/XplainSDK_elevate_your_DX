@@ -17,15 +17,18 @@ import { formatReplayConsole, formatReplayMarkdown } from "./replay/formatter.js
 import { ReplayFunction } from "./replay/types.js";
 import { generateHTMLReport, saveHTMLReport } from "./report/report.js";
 import { ReportOptions, ReportFunction } from "./report/types.js";
+import { analyzeDebug } from "./debug/debug.js";
+import { formatDebugConsole, formatDebugMarkdown } from "./debug/formatter.js";
+import { DebugFunction } from "./debug/types.js";
 import { XplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
- * @description Pure functional agent execution loop orchestrator managing HTML Reports, Session Replay, Explain Mode, events, guardrails, resiliency, and memory sessions.
+ * @description Pure functional agent execution loop orchestrator managing Smart Debug Assistant, HTML Reports, Session Replay, Explain Mode, events, guardrails, resiliency, and memory sessions.
  */
 
 /**
- * Executes the core agent completion loop, attaching HTML Report, Session Replay, and Explain Mode helpers, emitting lifecycle events,
+ * Executes the core agent completion loop, attaching Smart Debug Assistant, HTML Report, Session Replay, and Explain Mode helpers, emitting lifecycle events,
  * enforcing input guardrails, transient error retries, request timeouts, tool cycle loop detection, and multi-agent handoffs.
  * 
  * @param agent The target Agent instance.
@@ -268,7 +271,8 @@ export async function runAgentLoop(
                 providerOptions: options.providerOptions,
                 runId: runId,
                 handoffChain: newChain,
-                explain: options.explain
+                explain: options.explain,
+                debug: options.debug
             });
 
             return {
@@ -283,7 +287,9 @@ export async function runAgentLoop(
                 explanation: targetResult.explanation,
                 explain: targetResult.explain,
                 replay: targetResult.replay,
-                report: targetResult.report
+                report: targetResult.report,
+                debugReport: targetResult.debugReport,
+                debug: targetResult.debug
             };
         }
 
@@ -324,7 +330,7 @@ export async function runAgentLoop(
 
         const durationMs = Date.now() - startTime;
 
-        // 10. Generate Explain Mode, Session Replay & HTML Report Telemetry Helpers
+        // 10. Generate Telemetry & Diagnostic Helpers
         const explanation = generateExplanation(response.session, { handoffChain, runId });
 
         const explainFn: ExplainFunction = Object.assign(
@@ -363,6 +369,22 @@ export async function runAgentLoop(
             }
         );
 
+        const debugReport = analyzeDebug(response.session, { handoffChain, runId });
+
+        const debugFn: DebugFunction = Object.assign(
+            () => {
+                console.log(formatDebugConsole(debugReport));
+            },
+            {
+                markdown: () => formatDebugMarkdown(debugReport),
+                json: () => debugReport
+            }
+        );
+
+        if (options.debug) {
+            debugFn();
+        }
+
         // Emit "onRunComplete" event
         await agent.emitter.emit("onRunComplete", {
             runId,
@@ -385,7 +407,9 @@ export async function runAgentLoop(
             explanation: explanation,
             explain: explainFn,
             replay: replayFn,
-            report: reportFn
+            report: reportFn,
+            debugReport: debugReport,
+            debug: debugFn
         };
 
     } catch (error: any) {

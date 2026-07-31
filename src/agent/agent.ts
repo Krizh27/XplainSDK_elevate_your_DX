@@ -11,6 +11,8 @@ import { ReplayData } from "./replay/types.js";
 import { reconstructReplay } from "./replay/replay.js";
 import { ReportOptions } from "./report/types.js";
 import { saveHTMLReport } from "./report/report.js";
+import { DebugReport } from "./debug/types.js";
+import { analyzeDebug } from "./debug/debug.js";
 import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
 import { SessionRecord } from "../types.js";
@@ -21,7 +23,7 @@ import { SessionRecord } from "../types.js";
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
  * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`,
- * runtime event emitter (`.on()`), Explain Mode (`agent.explain()`), Session Replay (`agent.replay()`), Interactive HTML Report (`agent.generateReport()`), and structured output execution.
+ * runtime event emitter (`.on()`), Explain Mode (`agent.explain()`), Session Replay (`agent.replay()`), Interactive HTML Report (`agent.generateReport()`), Smart Debug Assistant (`agent.debug()`), and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -142,11 +144,30 @@ export class Agent {
     }
 
     /**
-     * Generates a standalone interactive HTML report document and optionally saves it to disk.
+     * Generates an evidence-based diagnostic DebugReport from a recorded SessionRecord or AgentRunResult.
      * 
      * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
-     * @param options Report configuration options.
-     * @returns Promise resolving to the generated HTML string.
+     * @returns Structured DebugReport object.
+     * 
+     * @example
+     * ```typescript
+     * const debugReport = agent.debug(result);
+     * console.log(debugReport.summary);
+     * ```
+     */
+    public debug(sessionOrResult: SessionRecord | AgentRunResult): DebugReport {
+        if (!sessionOrResult) {
+            throw new Error(`[AgentSDK Error] Missing SessionRecord or AgentRunResult argument in agent.debug().`);
+        }
+
+        const session = "session" in sessionOrResult ? sessionOrResult.session : (sessionOrResult as SessionRecord);
+        const handoffChain = "handoffChain" in sessionOrResult ? (sessionOrResult as AgentRunResult).handoffChain : undefined;
+
+        return analyzeDebug(session, { handoffChain });
+    }
+
+    /**
+     * Generates a standalone interactive HTML report document and optionally saves it to disk.
      */
     public async generateReport(
         sessionOrResult: SessionRecord | AgentRunResult,

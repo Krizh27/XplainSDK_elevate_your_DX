@@ -52,38 +52,47 @@
 | **Agent Phase 8** | Production-Quality Documentation, Examples Suite & NPM Package Polish | ✅ Completed |
 | **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed |
 | **Agent Phase 10**| Session Replay Engine (`result.replay()`, Step-by-Step Reconstruction, Zero Side Effects) | ✅ Completed |
-| **Agent Phase 12**| Interactive Standalone HTML Report Generator (`result.report()`, `report.html`, Zero CDNs) | ✅ Completed (Current) |
+| **Agent Phase 12**| Interactive Standalone HTML Report Generator (`result.report()`, `report.html`, Zero CDNs) | ✅ Completed |
+| **Agent Phase 13**| Smart Debug Assistant (`result.debug()`, Next Inspector Recommendations & Learning Tips) | ✅ Completed (Current) |
 
 ---
 
-## 📄 Interactive HTML Report Architecture (Agent Phase 12)
+## 🐞 Smart Debug Assistant Architecture (Agent Phase 13)
 
 ```text
-                       XplainSDK Session Record
-                                   │
-                                   ▼
-                    generateHTMLReport(session)  [src/agent/report/report.ts]
-                                   │
-            ┌──────────────────────┼──────────────────────┐
-            ▼                      ▼                      ▼
-     renderHeader()        renderSummary()        renderTimeline()
-     renderTools()         renderAdvisors()       renderMetrics()
-     renderGuardrails()    renderHandoffs()       renderRawJSON()
-                                   │
-                                   ▼
-                  compileHTMLDocument(components)  [src/agent/report/htmlTemplate.ts]
-                                   │
-                                   ▼
-                        Standalone report.html File
+                               Agent Run Execution
+                                       │
+                                       ▼
+                             XplainSDK Session Record
+                                       │
+            ┌──────────────────────────┼──────────────────────────┐
+            ▼                          ▼                          ▼
+    inspectPerformance()        inspectTools()             inspectPrompt()
+    inspectTokens()             generateExplanation()      inspectBehavior()
+            │                          │                          │
+            └──────────────────────────┼──────────────────────────┘
+                                       │
+                                       ▼
+                         analyzeDebug(session)  [src/agent/debug/debug.ts]
+                                       │
+                      ┌────────────────┴────────────────┐
+                      ▼                                 ▼
+              DebugReport JSON                 formatDebugConsole()
+                                               formatDebugMarkdown()
+                                               renderDebugSection() [HTML]
 ```
 
 ### Key Principles Implemented
-1. **Zero External Dependencies**: Embedded CSS styles and client-side JavaScript interactions (dark mode toggle, search bar, copy buttons, sticky navigation) into a single self-contained `.html` document string.
-2. **First-Class Developer API**:
-   - `await result.report({ outputPath: "./report.html" })`
-   - `const html = result.report.html()`
-   - `await agent.generateReport(session, { outputPath: "./report.html" })`
-3. **Zero Re-Execution**: Operates 100% deterministically on recorded `SessionRecord` telemetry.
+1. **Zero Logic Duplication**: Smart Debug Assistant consumes evidence from `SessionRecord`, `inspectPerformance()`, `inspectTools()`, `inspectPrompt()`, and `inspectBehavior()`. It **never** fabricates explanations or invents unevidenced recommendations.
+2. **Clear Distinction**:
+   - **Explain Mode (Phase 9)**: Executive summary of execution facts (what happened, tools called, token cost).
+   - **Smart Debug Assistant (Phase 13)**: Diagnostic troubleshooting guide focusing on anomalies, root causes, educational learning tips, and specific recommended next inspectors (`sdk.inspect.tools()`, `sdk.inspect.performance()`, etc.).
+3. **First-Class Developer API**:
+   - `const result = await agent.run({ input, debug: true });`
+   - `result.debug()` (Pretty terminal diagnostic box)
+   - `result.debug.markdown()` (Formatted markdown report)
+   - `result.debug.json()` (Structured `DebugReport` data object)
+   - `agent.debug(session)` or `agent.debug(result)`
 
 ---
 
@@ -98,7 +107,7 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── README.md             # Production-grade user documentation & API reference
 ├── test.ts               # Interactive XplainSDK test script
 ├── test_agent.ts         # Agent SDK Phase 1 test script
-├── test_all_features.ts  # 36-Test Comprehensive Feature Suite
+├── test_all_features.ts  # 41-Test Comprehensive Feature Suite
 ├── examples/
 │   ├── 01_quickstart_agent.ts         # Quickstart example
 │   ├── 02_memory_agent.ts         # Multi-turn memory example
@@ -109,7 +118,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   ├── 07_events_tracing_agent.ts # Events & Tracing example
 │   ├── 08_explain_mode_agent.ts   # Explain Mode example
 │   ├── 09_session_replay_agent.ts # Session Replay example
-│   └── 10_html_report_agent.ts   # [NEW IN AGENT PHASE 12] HTML Report example
+│   ├── 10_html_report_agent.ts    # HTML Report example
+│   └── 11_debug_assistant_agent.ts# [NEW IN AGENT PHASE 13] Smart Debug Assistant example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # XplainSDK CLASS
@@ -129,10 +139,10 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── events/       # Runtime Events & Tracing
         ├── explain/      # Explain Mode Orchestrator
         ├── replay/       # Session Replay Engine
-        └── report/       # [NEW IN AGENT PHASE 12]
-            ├── types.ts       # ReportOptions, ReportFunction
-            ├── htmlTemplate.ts# EMBEDDED_CSS & EMBEDDED_JS
-            ├── renderer.ts    # Section component renderers
-            ├── report.ts      # generateHTMLReport() & saveHTMLReport()
-            └── index.ts       # Report exports
+        ├── report/       # Interactive HTML Report Generator
+        └── debug/        # [NEW IN AGENT PHASE 13]
+            ├── types.ts       # NextInspectionRecommendation, DebugReport, DebugFunction
+            ├── debug.ts       # analyzeDebug() pure orchestrator
+            ├── formatter.ts   # formatDebugConsole(), formatDebugMarkdown()
+            └── index.ts       # Debug exports
 ```

@@ -21,7 +21,10 @@ import {
     formatReplayConsole,
     formatReplayMarkdown,
     generateHTMLReport,
-    saveHTMLReport
+    saveHTMLReport,
+    analyzeDebug,
+    formatDebugConsole,
+    formatDebugMarkdown
 } from "./src/index.js";
 import { z } from "zod";
 import fs from "node:fs/promises";
@@ -253,6 +256,21 @@ await saveHTMLReport(mockSession, { outputPath: reportPath });
 const fileExists = await fs.stat(reportPath).then(() => true).catch(() => false);
 assert(fileExists, "saveHTMLReport writes standalone report.html to disk");
 await fs.rm(reportPath, { force: true });
+
+// -------------------------------------------------------------------
+// TEST 12: Smart Debug Assistant (Phase 13)
+// -------------------------------------------------------------------
+console.log("\n--- Phase 13: Smart Debug Assistant ---");
+const debugReport = analyzeDebug(mockSession);
+assert(debugReport.summary.includes("processed in"), "analyzeDebug generates evidence-based summary");
+assert(debugReport.nextInspections.length > 0, "analyzeDebug generates next inspection recommendations");
+assert(debugReport.learningTips.length > 0, "analyzeDebug generates educational learning tips");
+
+const debugConsole = formatDebugConsole(debugReport);
+assert(debugConsole.includes("🐞 Smart Debug Assistant Report"), "formatDebugConsole renders pretty terminal diagnostic box");
+
+const debugMd = formatDebugMarkdown(debugReport);
+assert(debugMd.includes("# 🐞 Smart Debug Assistant Report"), "formatDebugMarkdown renders markdown debug report");
 
 // -------------------------------------------------------------------
 // FINAL VERIFICATION SUMMARY

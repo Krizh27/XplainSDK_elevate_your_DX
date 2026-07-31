@@ -5,6 +5,7 @@ import { Agent } from "./agent.js";
 import { AgentExplanation, ExplainFunction } from "./explain/types.js";
 import { ReplayData, ReplayFunction } from "./replay/types.js";
 import { ReportOptions, ReportFunction } from "./report/types.js";
+import { DebugReport, DebugFunction } from "./debug/types.js";
 import {
     RunStartPayload,
     ToolStartPayload,
@@ -127,6 +128,9 @@ export interface AgentRunOptions {
 
     /** Flag indicating whether to generate Explain Mode summary telemetry on result. @default false */
     explain?: boolean;
+
+    /** Flag indicating whether to print Smart Debug Assistant diagnostics on result. @default false */
+    debug?: boolean;
 }
 
 /**
@@ -182,4 +186,10 @@ export interface AgentRunResult {
 
     /** Callable ReportFunction: invoke `await result.report({ outputPath })` to generate HTML report file or `.html()` for raw string. */
     report: ReportFunction;
+
+    /** Structured DebugReport payload produced by Smart Debug Assistant. */
+    debugReport?: DebugReport;
+
+    /** Callable DebugFunction: invoke `result.debug()` for console output, `.markdown()` for report, `.json()` for data. */
+    debug: DebugFunction;
 }

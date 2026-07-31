@@ -7,6 +7,7 @@ import {
     renderTimelineSection,
     renderToolsSection,
     renderAdvisorsSection,
+    renderDebugSection,
     renderRawJSONSection
 } from "./renderer.js";
 import fs from "node:fs/promises";
@@ -32,6 +33,7 @@ export function generateHTMLReport(
 
     const headerHTML = renderHeaderSection(session, options?.runId);
     const summaryHTML = renderSummarySection(session, options?.handoffChain);
+    const debugHTML = renderDebugSection(session);
     const timelineHTML = renderTimelineSection(session);
     const toolsHTML = renderToolsSection(session);
     const advisorsHTML = renderAdvisorsSection(session);
@@ -55,6 +57,7 @@ export function generateHTMLReport(
         <ul class="nav-menu">
             <li><a href="#header-section" class="nav-link active">🚀 Overview</a></li>
             <li><a href="#summary-section" class="nav-link">🧠 Executive Summary</a></li>
+            <li><a href="#debug-section" class="nav-link">🐞 Smart Debug</a></li>
             <li><a href="#timeline-section" class="nav-link">⏱ Timeline</a></li>
             <li><a href="#tools-section" class="nav-link">🛠 Tools Executed</a></li>
             <li><a href="#advisors-section" class="nav-link">💡 Advisors</a></li>
@@ -73,6 +76,7 @@ export function generateHTMLReport(
 
         ${headerHTML}
         ${summaryHTML}
+        ${debugHTML}
         ${timelineHTML}
         ${toolsHTML}
         ${advisorsHTML}
