@@ -2,6 +2,7 @@ import { StreamSpeedPreset, SessionRecord } from "../types.js";
 import { StorageAdapter, AgentMessage } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 import { Agent } from "./agent.js";
+import { AgentExplanation, ExplainFunction } from "./explain/types.js";
 import {
     RunStartPayload,
     ToolStartPayload,
@@ -121,6 +122,9 @@ export interface AgentRunOptions {
 
     /** Internal delegation stack tracking active agent handoffs. */
     handoffChain?: string[];
+
+    /** Flag indicating whether to generate Explain Mode summary telemetry on result. @default false */
+    explain?: boolean;
 }
 
 /**
@@ -164,4 +168,10 @@ export interface AgentRunResult {
 
     /** Complete array of loaded and updated conversation messages for this session. */
     history?: AgentMessage[];
+
+    /** Structured AgentExplanation payload produced by Explain Mode. */
+    explanation?: AgentExplanation;
+
+    /** Callable ExplainFunction: invoke `result.explain()` for console output, `.markdown()` for report, `.json()` for data. */
+    explain: ExplainFunction;
 }

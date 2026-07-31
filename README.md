@@ -2,7 +2,7 @@
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
-ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, and typed runtime events.
+ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, and **Explain Mode**.
 
 ---
 
@@ -21,8 +21,9 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
   - [7. Structured Output & Schema Repair Engine](#7-structured-output--schema-repair-engine)
   - [8. Multi-Agent Handoffs & Loop Prevention](#8-multi-agent-handoffs--loop-prevention)
   - [9. Runtime Event Emitter & Tracing](#9-runtime-event-emitter--tracing)
-  - [10. ExplainSDK Inspector Framework](#10-explainsdk-inspector-framework)
-  - [11. Actionable Diagnostic Errors](#11-actionable-diagnostic-errors)
+  - [10. Explain Mode (Executive Summaries)](#10-explain-mode-executive-summaries)
+  - [11. ExplainSDK Inspector Framework](#11-explainsdk-inspector-framework)
+  - [12. Actionable Diagnostic Errors](#12-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
 - [License](#-license)
 
@@ -60,7 +61,7 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
 
 1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `ExplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
 2. **Single Class Rule**: `Agent` and `ExplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
-3. **Provider Compatibility**: All native provider options (`providerOptions`) pass directly through to official provider SDKs without restriction.
+3. **Zero Duplication**: **Explain Mode** consumes telemetry produced by ExplainSDK inspectors (`inspect.performance`, `inspect.tokens`, `inspect.cost`, `inspect.tools`, `inspect.prompt`, `inspect.behavior`) into a human-readable executive summary without duplicating underlying analysis logic.
 
 ---
 
@@ -95,14 +96,18 @@ const agent = new Agent({
     tools: [weatherTool]
 });
 
-// 3. Execute agent run
+// 3. Execute agent run with Explain Mode
 const result = await agent.run({
-    input: "What is the weather in Surat today?"
+    input: "What is the weather in Surat today?",
+    explain: true
 });
 
-console.log(result.output_text); // "The weather in Surat is 30°C and sunny today!"
-console.log(`Run ID: ${result.runId}`);
-console.log(`Estimated Cost: ${result.session.cost.formattedCost}`);
+console.log(result.output_text);
+
+// First-class Explain Mode API
+result.explain();          // Pretty console summary box
+console.log(result.explain.markdown()); // Markdown report
+const data = result.explain.json();      // Structured JSON payload
 ```
 
 ---
@@ -307,7 +312,51 @@ const result = await agent.run({ input: "Hello" });
 
 ---
 
-### 10. ExplainSDK Inspector Framework
+### 10. Explain Mode (Executive Summaries)
+
+Explain Mode synthesizes an executive summary explaining what happened, why decisions were made, tools executed, handoffs triggered, observations, and recommendations.
+
+```typescript
+const result = await agent.run({ input: "What is the weather?", explain: true });
+
+// Option 1: Pretty terminal output
+result.explain();
+
+// Option 2: Markdown report
+const mdReport = result.explain.markdown();
+
+// Option 3: Structured JSON data payload
+const jsonPayload = result.explain.json();
+console.log(jsonPayload.summary);
+
+// Option 4: Direct agent inspection
+const explanation = agent.explain(result.session);
+```
+
+#### Terminal Console Output Example:
+```text
+────────────────────────────────────────────────────────────
+🧠 Explain Mode Execution Summary
+────────────────────────────────────────────────────────────
+
+Summary
+The model processed the request in 580 ms utilizing 214 total tokens. It decided to invoke 1 tool(s) (get_weather).
+
+Performance & Cost
+• Duration:       580 ms
+• Total Tokens:   214
+• Estimated Cost: $0.00003
+
+Tool Executions
+  ✓ Executed tool "get_weather()" in 12 ms
+
+Explanation Confidence: HIGH
+────────────────────────────────────────────────────────────
+```
+
+---
+
+### 11. ExplainSDK Inspector Framework
 
 Inspect any `SessionRecord` using specialized inspector utilities:
 
@@ -331,7 +380,7 @@ console.log(formatInspection("prompt", promptAnalysis));
 
 ---
 
-### 11. Actionable Diagnostic Errors
+### 12. Actionable Diagnostic Errors
 
 Every error thrown by Agent SDK follows a strict 3-part diagnostic format:
 1. **What Happened**: Clear explanation of the failure.
@@ -361,6 +410,7 @@ Run any example directly using `npx tsx`:
 | `examples/05_structured_output_agent.ts` | Strongly typed Zod schema extraction & automated repair loop | `npx tsx examples/05_structured_output_agent.ts` |
 | `examples/06_multi_agent_handoff_agent.ts` | Multi-agent delegation, context transfer & handoff loop protection | `npx tsx examples/06_multi_agent_handoff_agent.ts` |
 | `examples/07_events_tracing_agent.ts` | Typed runtime event emitter, `runId` tracing & inspector inspection | `npx tsx examples/07_events_tracing_agent.ts` |
+| `examples/08_explain_mode_agent.ts` | Explain Mode execution summary, `result.explain()`, Markdown & JSON | `npx tsx examples/08_explain_mode_agent.ts` |
 
 ---
 

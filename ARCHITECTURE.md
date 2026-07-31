@@ -48,42 +48,47 @@
 | **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed |
 | **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed |
 | **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed |
-| **Agent Phase 7** | Runtime Event Emitter & ExplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed (Current) |
+| **Agent Phase 7** | Runtime Event Emitter & ExplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed |
+| **Agent Phase 8** | Production-Quality Documentation, Examples Suite & NPM Package Polish | ✅ Completed |
+| **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed (Current) |
 
 ---
 
-## 📡 Event Emitter & Observability Architecture (Agent Phase 7)
+## 🧠 Explain Mode Architecture (Agent Phase 9)
 
 ```text
-agent.run({ input })
-       │
-       ▼
- 1. Generate runId ("run_1722437200_abc") & emit "onRunStart"
-       │
-       ▼
- 2. runInputGuardrails() ──► emit "onGuardrail" ({ type: "input", passed: true })
-       │
-       ▼
- 3. LLM invokes Tool?
-       │
-       ├── emit "onToolStart" ({ toolName, args })
-       ├── Execute Tool / Handoff
-       │     └── If Handoff ──► emit "onHandoff" ({ fromAgent, toAgent, reason })
-       └── emit "onToolComplete" ({ toolName, result })
-             │
-             ▼
- 4. runOutputGuardrails() ──► emit "onGuardrail" ({ type: "output", passed: true })
-       │
-       ▼
- 5. emit "onRunComplete" ({ runId, output_text, session })
-       │
-       └── Return AgentRunResult { runId, output_text, session, history }
+                               Agent Run Execution
+                                       │
+                                       ▼
+                             ExplainSDK Session Record
+                                       │
+            ┌──────────────────────────┼──────────────────────────┐
+            ▼                          ▼                          ▼
+    inspectPerformance()        inspectTools()             inspectPrompt()
+    inspectTokens()             inspectTimeline()          inspectBehavior()
+    inspectCost()
+            │                          │                          │
+            └──────────────────────────┼──────────────────────────┘
+                                       │
+                                       ▼
+                       generateExplanation(session)  [src/agent/explain/explain.ts]
+                                       │
+                      ┌────────────────┴────────────────┐
+                      ▼                                 ▼
+             AgentExplanation JSON             formatExplainConsole()
+                                               formatExplainMarkdown()
 ```
 
 ### Key Principles Implemented
-1. **Unique `runId` Generation**: Every `agent.run({ input })` or `agent.runStructured({ input, schema })` invocation generates a unique identifier string (`run_1722437200_a1b2c3`).
-2. **Typed Lifecycle Event Emitter**: Subscribe to lifecycle events via `agent.on("onToolStart", listener)` or specify event handlers directly in `AgentConfig`.
-3. **ExplainSDK Telemetry Forwarding**: Every event is forwarded into ExplainSDK timelines, and `result.session` provides full flight recorder telemetry (`SessionRecord`).
+1. **Zero Logic Duplication**: Explain Mode consumes telemetry produced by ExplainSDK inspectors (`inspect.performance`, `inspect.tokens`, `inspect.cost`, `inspect.tools`, `inspect.prompt`, `inspect.behavior`). It does not re-implement timeline tracking or performance calculations.
+2. **First-Class Developer API**:
+   - `const result = await agent.run({ input, explain: true });`
+   - `result.explain()` (Pretty terminal output)
+   - `result.explain.markdown()` (Formatted markdown report)
+   - `result.explain.json()` or `result.explanation` (Strongly-typed JSON payload)
+   - `agent.explain(result)` or `agent.explain(sessionRecord)`
+3. **Structured Explanation Model**: Synthesizes executive summary, model decisions, tool usage, handoffs, guardrails, retries, observations, recommendations, and confidence levels.
+4. **Isolated Formatters**: Dedicated renderers for Console Output, Markdown, and JSON.
 
 ---
 
@@ -95,15 +100,18 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── tsconfig.json          # TypeScript ES Module compiler settings
 ├── VISION.md             # Core project mission compass & non-goals
 ├── ARCHITECTURE.md       # (This file) Complete architectural documentation
+├── README.md             # Production-grade user documentation & API reference
 ├── test.ts               # Interactive ExplainSDK test script
 ├── test_agent.ts         # Agent SDK Phase 1 test script
 ├── examples/
+│   ├── 01_quickstart_agent.ts         # Quickstart example
 │   ├── 02_memory_agent.ts         # Multi-turn memory example
 │   ├── 03_guardrails_approval_agent.ts # Guardrails & Approval example
 │   ├── 04_resiliency_agent.ts     # Resiliency & Loop Detection example
 │   ├── 05_structured_output_agent.ts   # Structured Output example
 │   ├── 06_multi_agent_handoff_agent.ts # Multi-Agent Handoff example
-│   └── 07_events_tracing_agent.ts # [NEW IN AGENT PHASE 7] Events & Tracing example
+│   ├── 07_events_tracing_agent.ts # Events & Tracing example
+│   └── 08_explain_mode_agent.ts   # [NEW IN AGENT PHASE 9] Explain Mode example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
@@ -120,8 +128,10 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── resiliency/   # Resiliency Engine & Loop Prevention
         ├── structured/   # Structured Outputs & Schema Repair
         ├── handoff/      # Multi-Agent Handoffs & Loop Prevention
-        └── events/       # [NEW IN AGENT PHASE 7]
-            ├── types.ts       # RunStartPayload, ToolStartPayload, EventMap
-            ├── emitter.ts     # AgentEventEmitter, generateRunId()
-            └── index.ts       # Events exports
+        ├── events/       # Runtime Events & Tracing
+        └── explain/      # [NEW IN AGENT PHASE 9]
+            ├── types.ts       # AgentExplanation, ExplainFunction
+            ├── explain.ts     # generateExplanation() pure orchestrator
+            ├── formatter.ts   # formatExplainConsole(), formatExplainMarkdown()
+            └── index.ts       # Explain exports
 ```

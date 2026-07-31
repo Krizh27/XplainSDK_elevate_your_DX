@@ -9,15 +9,18 @@ import { ToolCallSignature } from "./resiliency/types.js";
 import { createHandoffTool } from "./handoff/tool.js";
 import { detectHandoffLoop } from "./handoff/resolver.js";
 import { generateRunId } from "./events/emitter.js";
+import { generateExplanation } from "./explain/explain.js";
+import { formatExplainConsole, formatExplainMarkdown } from "./explain/formatter.js";
+import { ExplainFunction } from "./explain/types.js";
 import { ExplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
- * @description Pure functional agent execution loop orchestrator managing event emission, guardrails, resiliency, and memory sessions.
+ * @description Pure functional agent execution loop orchestrator managing Explain Mode, events, guardrails, resiliency, and memory sessions.
  */
 
 /**
- * Executes the core agent completion loop, emitting lifecycle events (`onRunStart`, `onToolStart`, `onToolComplete`, etc.),
+ * Executes the core agent completion loop, attaching Explain Mode telemetry, emitting lifecycle events,
  * enforcing input guardrails, transient error retries, request timeouts, tool cycle loop detection, and multi-agent handoffs.
  * 
  * @param agent The target Agent instance.
@@ -259,7 +262,8 @@ export async function runAgentLoop(
                 streamSpeed: options.streamSpeed,
                 providerOptions: options.providerOptions,
                 runId: runId,
-                handoffChain: newChain
+                handoffChain: newChain,
+                explain: options.explain
             });
 
             return {
@@ -270,7 +274,9 @@ export async function runAgentLoop(
                 agentName: agent.name,
                 activeAgentName: targetResult.activeAgentName,
                 handoffChain: newChain,
-                history: targetResult.history
+                history: targetResult.history,
+                explanation: targetResult.explanation,
+                explain: targetResult.explain
             };
         }
 
@@ -311,6 +317,24 @@ export async function runAgentLoop(
 
         const durationMs = Date.now() - startTime;
 
+        // 10. Generate Explain Mode Telemetry Payload
+        const explanation = generateExplanation(response.session, { handoffChain, runId });
+
+        const explainFn: ExplainFunction = Object.assign(
+            () => {
+                console.log(formatExplainConsole(explanation));
+            },
+            {
+                markdown: () => formatExplainMarkdown(explanation),
+                json: () => explanation
+            }
+        );
+
+        // Print automatic explanation if explain: true was passed
+        if (options.explain) {
+            explainFn();
+        }
+
         // Emit "onRunComplete" event
         await agent.emitter.emit("onRunComplete", {
             runId,
@@ -329,7 +353,9 @@ export async function runAgentLoop(
             agentName: agent.name,
             activeAgentName: agent.name,
             handoffChain: handoffChain,
-            history: updatedHistory
+            history: updatedHistory,
+            explanation: explanation,
+            explain: explainFn
         };
 
     } catch (error: any) {

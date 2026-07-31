@@ -5,8 +5,11 @@ import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/
 import { StructuredRunOptions, StructuredRunResult } from "./structured/types.js";
 import { AgentEventEmitter } from "./events/emitter.js";
 import { AgentEventName, AgentEventListener } from "./events/types.js";
+import { AgentExplanation } from "./explain/types.js";
+import { generateExplanation } from "./explain/explain.js";
 import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
+import { SessionRecord } from "../types.js";
 
 /**
  * @class Agent
@@ -14,7 +17,7 @@ import { runAgentLoop } from "./runner.js";
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
  * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`,
- * runtime event emitter (`.on()`, `.off()`), and structured output execution.
+ * runtime event emitter (`.on()`, `.off()`), Explain Mode (`agent.explain()`), and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -106,6 +109,29 @@ export class Agent {
     public off<K extends AgentEventName>(event: K, listener: AgentEventListener<K>): this {
         this.emitter.off(event, listener);
         return this;
+    }
+
+    /**
+     * Synthesizes an executive summary AgentExplanation payload for an agent run result or ExplainSDK SessionRecord.
+     * 
+     * @param sessionOrResult AgentRunResult object or SessionRecord flight recorder object.
+     * @returns Structured AgentExplanation object.
+     * 
+     * @example
+     * ```typescript
+     * const explanation = agent.explain(result);
+     * console.log(explanation.summary);
+     * ```
+     */
+    public explain(sessionOrResult: SessionRecord | AgentRunResult): AgentExplanation {
+        if (!sessionOrResult) {
+            throw new Error(`[AgentSDK Error] Missing SessionRecord or AgentRunResult argument in agent.explain().`);
+        }
+
+        const session = "session" in sessionOrResult ? sessionOrResult.session : (sessionOrResult as SessionRecord);
+        const handoffChain = "handoffChain" in sessionOrResult ? (sessionOrResult as AgentRunResult).handoffChain : undefined;
+
+        return generateExplanation(session, { handoffChain });
     }
 
     /**
