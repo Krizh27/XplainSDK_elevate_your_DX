@@ -1,6 +1,6 @@
 /**
  * @file agent/index.ts
- * @description Barrel export file for Agent SDK core runtime components, Memory system, Guardrails, Resiliency, Structured Outputs, and Multi-Agent Handoffs.
+ * @description Barrel export file for Agent SDK core runtime components, Memory system, Guardrails, Resiliency, Structured Outputs, Multi-Agent Handoffs, and Events.
  */
 
 export { Agent } from "./agent.js";
@@ -12,3 +12,4 @@ export * from "./guardrails/index.js";
 export * from "./resiliency/index.js";
 export * from "./structured/index.js";
 export * from "./handoff/index.js";
+export * from "./events/index.js";

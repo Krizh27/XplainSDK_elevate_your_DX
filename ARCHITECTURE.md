@@ -47,37 +47,43 @@
 | **Agent Phase 3** | Guardrails & Human-in-the-Loop Approval (`inputGuardrails`, `outputGuardrails`, `onApprovalRequired`) | ✅ Completed |
 | **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed |
 | **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed |
-| **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed (Current) |
+| **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed |
+| **Agent Phase 7** | Runtime Event Emitter & ExplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed (Current) |
 
 ---
 
-## 🤝 Multi-Agent Handoff Architecture (Agent Phase 6)
+## 📡 Event Emitter & Observability Architecture (Agent Phase 7)
 
 ```text
-User Input ──► TriageAgent.run({ input, sessionId })
-                     │
-                     ▼
-          TriageAgent LLM loop
-                     │
-                     ▼ Model calls transfer_to_BillingAgent({ reason })
-          resolveHandoff(currentAgent, targetAgent, context, chain)
-                     │
-                     ├── 1. Check detectHandoffLoop(chain, targetAgent)
-                     │        └── Loop or depth > maxHandoffDepth? ──► Throw [AgentSDK Handoff Loop Error]
-                     │
-                     ├── 2. Log timeline event in ExplainSDK ("agent_handoff", { from, to, reason })
-                     │
-                     └── 3. Transfer history & execute BillingAgent.run({ input, sessionId, history })
-                              │
-                              ▼
-                     Return AgentRunResult { activeAgentName: "BillingAgent", output_text, session }
+agent.run({ input })
+       │
+       ▼
+ 1. Generate runId ("run_1722437200_abc") & emit "onRunStart"
+       │
+       ▼
+ 2. runInputGuardrails() ──► emit "onGuardrail" ({ type: "input", passed: true })
+       │
+       ▼
+ 3. LLM invokes Tool?
+       │
+       ├── emit "onToolStart" ({ toolName, args })
+       ├── Execute Tool / Handoff
+       │     └── If Handoff ──► emit "onHandoff" ({ fromAgent, toAgent, reason })
+       └── emit "onToolComplete" ({ toolName, result })
+             │
+             ▼
+ 4. runOutputGuardrails() ──► emit "onGuardrail" ({ type: "output", passed: true })
+       │
+       ▼
+ 5. emit "onRunComplete" ({ runId, output_text, session })
+       │
+       └── Return AgentRunResult { runId, output_text, session, history }
 ```
 
 ### Key Principles Implemented
-1. **Multi-Agent Handoff Tool Generation**: Declaring `handoffs: [BillingAgent]` on `TriageAgent` automatically generates transfer tool `transfer_to_BillingAgent`.
-2. **Context History Transfer**: When control transfers from Agent A to Agent B, full conversation history, session ID, and memory are preserved intact.
-3. **ExplainSDK Telemetry**: Every handoff event is logged directly into ExplainSDK request timelines (`agent_handoff` timeline events).
-4. **Handoff Loop Prevention & Depth Bounds**: Tracks active agent delegation chain (`handoffChain`). If circular delegation (A $\rightarrow$ B $\rightarrow$ A) or maximum depth (`maxHandoffDepth`, default 5) is exceeded, halts delegation with an actionable 3-part diagnostic `[AgentSDK Handoff Loop Error]`.
+1. **Unique `runId` Generation**: Every `agent.run({ input })` or `agent.runStructured({ input, schema })` invocation generates a unique identifier string (`run_1722437200_a1b2c3`).
+2. **Typed Lifecycle Event Emitter**: Subscribe to lifecycle events via `agent.on("onToolStart", listener)` or specify event handlers directly in `AgentConfig`.
+3. **ExplainSDK Telemetry Forwarding**: Every event is forwarded into ExplainSDK timelines, and `result.session` provides full flight recorder telemetry (`SessionRecord`).
 
 ---
 
@@ -96,7 +102,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   ├── 03_guardrails_approval_agent.ts # Guardrails & Approval example
 │   ├── 04_resiliency_agent.ts     # Resiliency & Loop Detection example
 │   ├── 05_structured_output_agent.ts   # Structured Output example
-│   └── 06_multi_agent_handoff_agent.ts # [NEW IN AGENT PHASE 6] Multi-Agent Handoff example
+│   ├── 06_multi_agent_handoff_agent.ts # Multi-Agent Handoff example
+│   └── 07_events_tracing_agent.ts # [NEW IN AGENT PHASE 7] Events & Tracing example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
@@ -112,9 +119,9 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── guardrails/   # Guardrails & Human-in-the-Loop Approval
         ├── resiliency/   # Resiliency Engine & Loop Prevention
         ├── structured/   # Structured Outputs & Schema Repair
-        └── handoff/      # [NEW IN AGENT PHASE 6]
-            ├── types.ts       # HandoffPayload, HandoffResult
-            ├── tool.ts        # createHandoffTool()
-            ├── resolver.ts    # detectHandoffLoop()
-            └── index.ts       # Handoff exports
+        ├── handoff/      # Multi-Agent Handoffs & Loop Prevention
+        └── events/       # [NEW IN AGENT PHASE 7]
+            ├── types.ts       # RunStartPayload, ToolStartPayload, EventMap
+            ├── emitter.ts     # AgentEventEmitter, generateRunId()
+            └── index.ts       # Events exports
 ```

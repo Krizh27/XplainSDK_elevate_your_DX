@@ -2,6 +2,15 @@ import { StreamSpeedPreset, SessionRecord } from "../types.js";
 import { StorageAdapter, AgentMessage } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 import { Agent } from "./agent.js";
+import {
+    RunStartPayload,
+    ToolStartPayload,
+    ToolCompletePayload,
+    HandoffEventPayload,
+    GuardrailPayload,
+    RunCompletePayload,
+    RunFailedPayload
+} from "./events/types.js";
 
 /**
  * @file agent/types.ts
@@ -77,6 +86,15 @@ export interface AgentConfig {
 
     /** Maximum allowed delegation stack depth before triggering handoff loop error. @default 5 */
     maxHandoffDepth?: number;
+
+    // Optional Event Callbacks
+    onRunStart?: (payload: RunStartPayload) => void | Promise<void>;
+    onToolStart?: (payload: ToolStartPayload) => void | Promise<void>;
+    onToolComplete?: (payload: ToolCompletePayload) => void | Promise<void>;
+    onHandoff?: (payload: HandoffEventPayload) => void | Promise<void>;
+    onGuardrail?: (payload: GuardrailPayload) => void | Promise<void>;
+    onRunComplete?: (payload: RunCompletePayload) => void | Promise<void>;
+    onRunFailed?: (payload: RunFailedPayload) => void | Promise<void>;
 }
 
 /**
@@ -98,6 +116,9 @@ export interface AgentRunOptions {
     /** Optional provider-specific parameters passed directly to provider SDK. */
     providerOptions?: Record<string, any>;
 
+    /** Optional runId tracking this specific run context. */
+    runId?: string;
+
     /** Internal delegation stack tracking active agent handoffs. */
     handoffChain?: string[];
 }
@@ -106,6 +127,7 @@ export interface AgentRunOptions {
  * Transient execution context constructed per agent run.
  */
 export interface RunContext {
+    runId: string;
     sessionId?: string;
     input: string;
     history: AgentMessage[];
@@ -119,6 +141,9 @@ export interface RunContext {
  * Normalized result payload returned by `agent.run()`.
  */
 export interface AgentRunResult {
+    /** Unique run identifier string generated for this execution turn. */
+    runId: string;
+
     /** Final text response produced by the agent. */
     output_text: string;
 

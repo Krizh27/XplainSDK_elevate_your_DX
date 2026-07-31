@@ -3,6 +3,8 @@ import { AgentConfig, AgentRunOptions, AgentRunResult, AgentTool } from "./types
 import { StorageAdapter } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
 import { StructuredRunOptions, StructuredRunResult } from "./structured/types.js";
+import { AgentEventEmitter } from "./events/emitter.js";
+import { AgentEventName, AgentEventListener } from "./events/types.js";
 import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
 
@@ -11,7 +13,8 @@ import { runAgentLoop } from "./runner.js";
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
- * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`, and structured output execution.
+ * guardrails, approval callbacks, resiliency policies, multi-agent `handoffs`,
+ * runtime event emitter (`.on()`, `.off()`), and structured output execution.
  */
 export class Agent {
     public readonly name: string;
@@ -31,6 +34,9 @@ export class Agent {
     public readonly maxToolLoopThreshold: number;
     public readonly handoffs: Agent[];
     public readonly maxHandoffDepth: number;
+
+    /** Typed event emitter instance for runtime lifecycle events. */
+    public readonly emitter: AgentEventEmitter;
 
     /**
      * Instantiates a new Agent instance.
@@ -73,13 +79,40 @@ export class Agent {
         this.maxToolLoopThreshold = config.maxToolLoopThreshold !== undefined ? config.maxToolLoopThreshold : 3;
         this.handoffs = config.handoffs || [];
         this.maxHandoffDepth = config.maxHandoffDepth !== undefined ? config.maxHandoffDepth : 5;
+
+        // Initialize event emitter & attach config callbacks
+        this.emitter = new AgentEventEmitter();
+
+        if (config.onRunStart) this.emitter.on("onRunStart", config.onRunStart);
+        if (config.onToolStart) this.emitter.on("onToolStart", config.onToolStart);
+        if (config.onToolComplete) this.emitter.on("onToolComplete", config.onToolComplete);
+        if (config.onHandoff) this.emitter.on("onHandoff", config.onHandoff);
+        if (config.onGuardrail) this.emitter.on("onGuardrail", config.onGuardrail);
+        if (config.onRunComplete) this.emitter.on("onRunComplete", config.onRunComplete);
+        if (config.onRunFailed) this.emitter.on("onRunFailed", config.onRunFailed);
+    }
+
+    /**
+     * Subscribes a listener to a runtime lifecycle event (`onRunStart`, `onToolStart`, `onToolComplete`, etc.).
+     */
+    public on<K extends AgentEventName>(event: K, listener: AgentEventListener<K>): this {
+        this.emitter.on(event, listener);
+        return this;
+    }
+
+    /**
+     * Unsubscribes a listener from a runtime lifecycle event.
+     */
+    public off<K extends AgentEventName>(event: K, listener: AgentEventListener<K>): this {
+        this.emitter.off(event, listener);
+        return this;
     }
 
     /**
      * Executes an agent run with the given prompt input and optional sessionId.
      * 
      * @param options Run options containing user `input` string, optional `sessionId`, and overrides.
-     * @returns Promise resolving to `AgentRunResult` containing output text, active agent name, delegation chain, and ExplainSDK `session`.
+     * @returns Promise resolving to `AgentRunResult` containing runId, output text, active agent name, delegation chain, and ExplainSDK `session`.
      */
     public async run(options: AgentRunOptions): Promise<AgentRunResult> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {
