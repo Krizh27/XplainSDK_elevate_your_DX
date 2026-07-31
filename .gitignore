@@ -1,0 +1,5 @@
+node_modules/
+dist/
+session_*.json
+*.log
+.env
