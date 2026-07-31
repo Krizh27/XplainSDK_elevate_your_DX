@@ -1,6 +1,9 @@
+import { z } from "zod";
 import { AgentConfig, AgentRunOptions, AgentRunResult, AgentTool } from "./types.js";
 import { StorageAdapter } from "./memory/types.js";
 import { InputGuardrail, OutputGuardrail, ApprovalCallback } from "./guardrails/types.js";
+import { StructuredRunOptions, StructuredRunResult } from "./structured/types.js";
+import { executeStructuredOutput } from "./structured/repair.js";
 import { runAgentLoop } from "./runner.js";
 
 /**
@@ -8,7 +11,7 @@ import { runAgentLoop } from "./runner.js";
  * @description Primary declarative entity in Agent SDK representing an AI Agent.
  * 
  * An `Agent` encapsulates identity name, instructions, model, tools, memory,
- * guardrails, human approval callbacks, and resiliency policies (`retries`, `timeoutMs`, `maxToolLoopThreshold`).
+ * guardrails, approval callbacks, resiliency policies, and structured output execution (`runStructured`).
  */
 export class Agent {
     public readonly name: string;
@@ -85,5 +88,48 @@ export class Agent {
         }
 
         return await runAgentLoop(this, options);
+    }
+
+    /**
+     * Executes a structured output extraction run, guaranteeing that the response conforms strictly to a Zod schema.
+     * Automatically executes repair retry loops if generated JSON fails Zod schema validation.
+     * 
+     * @template TSchema Zod schema type extending z.ZodTypeAny.
+     * @param options StructuredRunOptions containing `input` string and target Zod `schema`.
+     * @returns Promise resolving to strongly typed `StructuredRunResult<z.infer<TSchema>>`.
+     * 
+     * @example
+     * ```typescript
+     * const UserSchema = z.object({ name: z.string(), age: z.number() });
+     * 
+     * const result = await agent.runStructured({
+     *   input: "Extract user details: Alex is 28 years old.",
+     *   schema: UserSchema
+     * });
+     * console.log(result.data.name); // "Alex" (Strongly typed)
+     * ```
+     */
+    public async runStructured<TSchema extends z.ZodTypeAny>(
+        options: StructuredRunOptions<TSchema>
+    ): Promise<StructuredRunResult<z.infer<TSchema>>> {
+        if (!options || !options.schema) {
+            throw new Error(
+                `[AgentSDK Error] Missing required Zod schema parameter in runStructured().\n\n` +
+                `What Happened: You called agent.runStructured() without providing a Zod schema.\n` +
+                `Why: Structured extraction requires a valid Zod schema definition to validate output.\n` +
+                `How to Fix: Pass a schema property: agent.runStructured({ input: "...", schema: MyZodSchema }).`
+            );
+        }
+
+        if (!options.input || typeof options.input !== "string" || options.input.trim() === "") {
+            throw new Error(
+                `[AgentSDK Error] Missing required input prompt in runStructured().\n\n` +
+                `What Happened: You called agent.runStructured() with an empty or missing input prompt.\n` +
+                `Why: The agent requires a non-empty text prompt to extract structured data.\n` +
+                `How to Fix: Pass an input property: agent.runStructured({ input: "Your text here", schema }).`
+            );
+        }
+
+        return await executeStructuredOutput(this, options);
     }
 }

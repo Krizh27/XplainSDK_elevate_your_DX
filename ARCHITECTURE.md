@@ -45,41 +45,40 @@
 | **Agent Phase 1** | Core Agent Runtime, Tool System & Execution Loop (`Agent`, `createAgentTool`, `runAgentLoop`) | ✅ Completed |
 | **Agent Phase 2** | Persistent Memory & Storage Adapters (`StorageAdapter`, `InMemoryStorageAdapter`, `FileStorageAdapter`) | ✅ Completed |
 | **Agent Phase 3** | Guardrails & Human-in-the-Loop Approval (`inputGuardrails`, `outputGuardrails`, `onApprovalRequired`) | ✅ Completed |
-| **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed (Current) |
+| **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed |
+| **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed (Current) |
 
 ---
 
-## ⚡ Resiliency Architecture (Agent Phase 4)
+## 📐 Structured Output & Schema Repair Architecture (Agent Phase 5)
 
 ```text
-agent.run({ input })
-       │
-       ▼
- 1. runInputGuardrails()  [Fails fast, zero retries]
-       │
-       ▼
- 2. withRetryAndTimeout(fn, { retries: 3, timeoutMs: 30000 })
-       │
-       ├── Timeout exceeded? ──► Throw [AgentSDK Timeout Error]
-       │
-       ├── Transient 429/503 Error? ──► Exponential Backoff (200ms -> 400ms -> 800ms) ──► Retry
-       │
-       └── Validation / Auth Error? ──► Throw immediately (No retry)
-             │
-             ▼
- 3. detectToolLoop(toolHistory, nextToolCall, threshold)
-       │
-       ├── Same tool & args >= 3 times consecutively?
-       │     └── Throw [AgentSDK Tool Loop Error] (Halts runaway loops)
-       │
-       └── Normal call ──► Execute Tool
+agent.runStructured({ input, schema: UserProfileSchema })
+                       │
+                       ▼
+ 1. Execute LLM completion with JSON response formatting
+                       │
+                       ▼
+ 2. Clean text & parse with schema.safeParse(json)
+                       │
+                       ├── Success? ──► Return { data: z.infer<TSchema>, session, repairAttempts: 0 }
+                       │
+                       └── Failure? (Validation Error)
+                             │
+                             ▼
+ 3. Generate Schema Repair Prompt with Zod error details
+                             │
+                             ▼
+ 4. Repair Retry Loop (Attempt 1..maxRepairAttempts)
+                             │
+                             ├── Fixed? ──► Return { data, repairAttempts }
+                             └── Exhausted? ──► Throw [AgentSDK Schema Validation Error]
 ```
 
 ### Key Principles Implemented
-1. **Transient Error Retries Only**: Retries rate limits (429), server errors (500/502/503/504), and connection timeouts using exponential backoff with random jitter (`delay = initialDelay * 2^attempt + jitter`).
-2. **Never Retry Validation Failures**: Failures like Guardrail errors, Zod schema validation errors, 401 invalid API keys, and 404 bad models fail fast immediately.
-3. **Tool Loop Detection**: Prevents infinite runaway billing loops by tracking state signatures (`toolName:JSON.stringify(args)`). Halts execution if identical tools/args are invoked consecutively $\ge 3$ times.
-4. **Timeout Wrapper**: Enforces per-turn `timeoutMs` bounds, throwing an actionable diagnostic error if exceeded.
+1. **Strong TypeScript Inference (`z.infer<TSchema>`)**: Developer supplies Zod schema `schema: TSchema`, and SDK guarantees strongly-typed `result.data`.
+2. **Automated Schema Repair Loop**: Validates completions with `schema.safeParse(json)`. If validation fails, Agent SDK automatically constructs a diagnostic repair prompt detailing exact Zod validation error paths and retries completion up to `maxRepairAttempts` (default 3).
+3. **Provider JSON Mode Integration**: Automatically enables native JSON mode via `providerOptions: { response_format: { type: "json_object" } }`.
 
 ---
 
@@ -87,7 +86,7 @@ agent.run({ input })
 
 ```
 c:\Users\meena\Downloads\AI_SDK_TEST\
-├── package.json          # Package dependencies (openai, tsx, typescript)
+├── package.json          # Package dependencies (openai, tsx, typescript, zod)
 ├── tsconfig.json          # TypeScript ES Module compiler settings
 ├── VISION.md             # Core project mission compass & non-goals
 ├── ARCHITECTURE.md       # (This file) Complete architectural documentation
@@ -96,7 +95,8 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── examples/
 │   ├── 02_memory_agent.ts         # Multi-turn memory example
 │   ├── 03_guardrails_approval_agent.ts # Guardrails & Approval example
-│   └── 04_resiliency_agent.ts     # [NEW IN AGENT PHASE 4] Resiliency & Loop Detection example
+│   ├── 04_resiliency_agent.ts     # Resiliency & Loop Detection example
+│   └── 05_structured_output_agent.ts   # [NEW IN AGENT PHASE 5] Structured Output example
 └── src/
     ├── index.ts          # Public barrel export
     ├── client.ts         # ExplainSDK CLASS
@@ -110,9 +110,9 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── types.ts      # AgentConfig, RunContext, AgentRunResult
         ├── memory/       # Persistent Memory & Storage Adapters
         ├── guardrails/   # Guardrails & Human-in-the-Loop Approval
-        └── resiliency/   # [NEW IN AGENT PHASE 4]
-            ├── types.ts       # ResiliencyOptions, ToolCallSignature
-            ├── retry.ts       # withRetryAndTimeout(), isTransientError()
-            ├── loopDetector.ts# detectToolLoop()
-            └── index.ts       # Resiliency barrel export
+        ├── resiliency/   # Resiliency Engine & Loop Prevention
+        └── structured/   # [NEW IN AGENT PHASE 5]
+            ├── types.ts       # StructuredRunOptions, StructuredRunResult
+            ├── repair.ts      # executeStructuredOutput(), generateRepairPrompt()
+            └── index.ts       # Structured exports
 ```
