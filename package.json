@@ -1,13 +1,50 @@
 {
-  "dependencies": {
-    "@openai/agents": "^0.14.1",
-    "openai": "^7.2.0",
-    "zod": "^4.4.3"
-  },
+  "name": "explain-sdk",
+  "version": "1.0.0",
+  "description": "Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test_agent.ts"
+  },
+  "keywords": [
+    "ai",
+    "agent-sdk",
+    "explain-sdk",
+    "llm",
+    "openai",
+    "observability",
+    "flight-recorder",
+    "inspectors",
+    "prompt-advisor",
+    "behavior-advisor",
+    "guardrails",
+    "structured-outputs",
+    "zod",
+    "handoffs"
+  ],
+  "author": "Krizh27",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Krizh27/XplainSDK_elevate_your_DX.git"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "zod": "^3.22.0"
+  },
   "devDependencies": {
-    "@types/node": "^26.1.2",
-    "tsx": "^4.23.1",
-    "typescript": "^7.0.2"
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
   }
 }

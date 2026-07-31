@@ -1,4 +1,4 @@
-import { SessionRecord, PromptAnalysisData, PromptCategoryAnalysis } from "../types.js";
+import { SessionRecord, PromptAnalysisData, PromptCategoryAnalysis, CategoryStatus } from "../types.js";
 
 /**
  * @file inspectors/prompt.ts

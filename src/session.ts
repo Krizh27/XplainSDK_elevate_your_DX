@@ -1,4 +1,3 @@
-import { fsWriteFile } from "./logger.js";
 import { ChatOptions, SessionRecord, TimelineState, TokenUsage } from "./types.js";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";

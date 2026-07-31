@@ -17,7 +17,7 @@ import {
  * @description Centralized TypeScript interface contracts and configuration schemas for the Agent SDK.
  */
 
-export interface AgentTool<TArgs = Record<string, any>, TResult = any> {
+export interface AgentTool<TArgs = any, TResult = any> {
     /** Unique name identifier for the tool. */
     name: string;
     /** Clear description explaining what the tool does to the LLM model. */
@@ -58,7 +58,7 @@ export interface AgentConfig {
     maxIterations?: number;
 
     /** List of tools available to this agent. */
-    tools?: AgentTool[];
+    tools?: AgentTool<any, any>[];
 
     /** Optional persistent memory storage adapter implementation. */
     memory?: StorageAdapter;

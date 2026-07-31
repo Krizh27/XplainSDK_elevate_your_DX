@@ -139,7 +139,7 @@ export class ExplainSDK {
             );
         }
 
-        registerToolInRegistry(this.toolRegistry, tool);
+        registerToolInRegistry(this.toolRegistry, tool as any);
     }
 
     /**
