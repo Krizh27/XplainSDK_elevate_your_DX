@@ -1,14 +1,14 @@
-# ExplainSDK - Project Vision & Core Mission
+# XplainSDK - Project Vision & Core Mission
 
 > **Mission**: Help developers understand, debug, and learn how AI applications work by making the invisible visible.
 
 ---
 
-## 🧭 1. Why Does ExplainSDK Exist?
+## 🧭 1. Why Does XplainSDK Exist?
 
 Most AI SDKs treat LLMs as black boxes. They send a prompt over HTTP and return a text response, hiding what happens behind the scenes—latency breakdown, token usage, API costs, stream chunk timings, and tool call execution details.
 
-ExplainSDK exists to **illuminate the internals of AI applications**. It acts as an open-source Developer Experience (DX) Layer that sits on top of official provider SDKs, providing complete observability and educational clarity without adding bloat or complex OOP abstractions.
+XplainSDK exists to **illuminate the internals of AI applications**. It acts as an open-source Developer Experience (DX) Layer that sits on top of official provider SDKs, providing complete observability and educational clarity without adding bloat or complex OOP abstractions.
 
 ---
 
@@ -33,10 +33,10 @@ ExplainSDK exists to **illuminate the internals of AI applications**. It acts as
 
 ## 🛑 4. What Will It Intentionally NOT Do?
 
-ExplainSDK stays focused by enforcing strict boundaries. **It will intentionally NOT:**
+XplainSDK stays focused by enforcing strict boundaries. **It will intentionally NOT:**
 
 1. **Replace Official Provider SDKs**: It will NOT re-implement model endpoints, image generation, audio, embeddings, or reasoning APIs. Official SDKs handle model capabilities.
-2. **Teach Over-Engineered OOP**: It will NOT introduce complex class hierarchies, factories, or event emitters. `ExplainSDK` remains the **ONLY CLASS** in the codebase. Everything else is pure functions.
+2. **Teach Over-Engineered OOP**: It will NOT introduce complex class hierarchies, factories, or event emitters. `XplainSDK` remains the **ONLY CLASS** in the codebase. Everything else is pure functions.
 3. **Hide Native Provider Features**: It will NOT wrap every parameter. It allows native `providerOptions` (`temperature`, `top_p`, `max_tokens`, etc.) to pass directly through to official provider SDKs.
 4. **Perform Secret Telemetry**: It will NOT send metrics, prompt data, or sessions to external remote servers. All data stays local to the developer's application.
 

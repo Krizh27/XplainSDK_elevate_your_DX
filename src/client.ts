@@ -1,22 +1,22 @@
-import { ExplainSDKOptions, ChatOptions, ChatResponse, ToolDefinition, StreamSpeedPreset, StreamRenderingOptions, SessionRecord } from "./types.js";
+import { XplainSDKOptions, ChatOptions, ChatResponse, ToolDefinition, StreamSpeedPreset, StreamRenderingOptions, SessionRecord } from "./types.js";
 import { handleChat, handleStream } from "./chat.js";
 import { createToolRegistry, registerToolInRegistry, ToolRegistry } from "./tools.js";
 import { inspectTimeline, inspectPerformance, inspectTokens, inspectCost, inspectTools, inspectPrompt, inspectBehavior } from "./inspectors/index.js";
 
 /**
- * @class ExplainSDK
- * @description Main client entry point for ExplainSDK.
+ * @class XplainSDK
+ * @description Main client entry point for XplainSDK.
  * 
- * `ExplainSDK` is the ONLY CLASS in the SDK codebase.
+ * `XplainSDK` is the ONLY CLASS in the SDK codebase.
  * It provides an educational, zero-abstraction DX Layer on top of LLM APIs.
  * It includes an Inspector Framework (`sdk.inspect.behavior`, `sdk.inspect.prompt`, etc.),
  * Session Flight Recording, Stream Rendering Speed controls, and Tool Call Inspection.
  * 
  * @example
  * ```typescript
- * import { ExplainSDK } from "explainsdk";
+ * import { XplainSDK } from "xplain-sdk";
  * 
- * const sdk = new ExplainSDK({
+ * const sdk = new XplainSDK({
  *   apiKey: process.env.OPENAI_API_KEY,
  *   model: "gpt-4o-mini"
  * });
@@ -26,7 +26,7 @@ import { inspectTimeline, inspectPerformance, inspectTokens, inspectCost, inspec
  * console.log(behaviorData.summary);
  * ```
  */
-export class ExplainSDK {
+export class XplainSDK {
     private provider: string;
     private apiKey: string;
     private defaultModel: string;
@@ -36,19 +36,19 @@ export class ExplainSDK {
     private toolRegistry: ToolRegistry;
 
     /**
-     * Instantiates a new `ExplainSDK` client instance.
+     * Instantiates a new `XplainSDK` client instance.
      * 
      * @param options Configuration options including `apiKey`, `provider`, default `model`, and default stream rendering settings.
      * @throws Actionable diagnostic error if `apiKey` is missing or invalid.
      */
-    constructor(options: ExplainSDKOptions) {
+    constructor(options: XplainSDKOptions) {
         if (!options || typeof options.apiKey !== "string" || options.apiKey.trim() === "") {
             throw new Error(
-                `[ExplainSDK Error] Missing required configuration option "apiKey".\n\n` +
-                `What Happened: ExplainSDK was initialized without a valid API key string.\n` +
+                `[XplainSDK Error] Missing required configuration option "apiKey".\n\n` +
+                `What Happened: XplainSDK was initialized without a valid API key string.\n` +
                 `Why: Authentication with AI provider APIs requires a valid API key.\n` +
-                `How to Fix: Pass your API key when instantiating ExplainSDK:\n\n` +
-                `  const sdk = new ExplainSDK({\n` +
+                `How to Fix: Pass your API key when instantiating XplainSDK:\n\n` +
+                `  const sdk = new XplainSDK({\n` +
                 `    apiKey: process.env.OPENAI_API_KEY || "sk-your-key-here"\n` +
                 `  });\n`
             );
@@ -123,18 +123,18 @@ export class ExplainSDK {
     public registerTool<TArgs = Record<string, any>, TResult = any>(tool: ToolDefinition<TArgs, TResult>): void {
         if (!tool || typeof tool.name !== "string" || tool.name.trim() === "") {
             throw new Error(
-                `[ExplainSDK Error] Cannot register tool with missing or invalid name.\n\n` +
+                `[XplainSDK Error] Cannot register tool with missing or invalid name.\n\n` +
                 `What Happened: You called sdk.registerTool() with an invalid tool object.\n` +
-                `Why: ExplainSDK requires every tool to have a unique string name.\n` +
+                `Why: XplainSDK requires every tool to have a unique string name.\n` +
                 `How to Fix: Provide a valid name property (e.g. name: "weather").`
             );
         }
 
         if (typeof tool.execute !== "function") {
             throw new Error(
-                `[ExplainSDK Error] Cannot register tool "${tool.name}" without an execute function.\n\n` +
+                `[XplainSDK Error] Cannot register tool "${tool.name}" without an execute function.\n\n` +
                 `What Happened: The tool "${tool.name}" is missing an execute handler function.\n` +
-                `Why: ExplainSDK requires an executable function to invoke when the model calls this tool.\n` +
+                `Why: XplainSDK requires an executable function to invoke when the model calls this tool.\n` +
                 `How to Fix: Add an execute async function property to your tool definition.`
             );
         }
@@ -148,7 +148,7 @@ export class ExplainSDK {
     public async chat(options: ChatOptions): Promise<ChatResponse> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {
             throw new Error(
-                `[ExplainSDK Error] Missing required input prompt.\n\n` +
+                `[XplainSDK Error] Missing required input prompt.\n\n` +
                 `What Happened: You called sdk.chat() with an empty or missing input prompt.\n` +
                 `Why: The AI model requires a non-empty text prompt string to generate a response.\n` +
                 `How to Fix: Pass an input property to sdk.chat({ input: "Your prompt here" }).`
@@ -170,7 +170,7 @@ export class ExplainSDK {
     public async stream(options: ChatOptions): Promise<ChatResponse> {
         if (!options || typeof options.input !== "string" || options.input.trim() === "") {
             throw new Error(
-                `[ExplainSDK Error] Missing required input prompt for streaming.\n\n` +
+                `[XplainSDK Error] Missing required input prompt for streaming.\n\n` +
                 `What Happened: You called sdk.stream() with an empty or missing input prompt.\n` +
                 `Why: The AI model requires a non-empty text prompt string to stream responses.\n` +
                 `How to Fix: Pass an input property to sdk.stream({ input: "Your prompt here" }).`

@@ -1,10 +1,10 @@
 /**
  * @file index.ts
- * @description Package barrel entry point re-exporting ExplainSDK DX layer and Agent SDK core runtime components.
+ * @description Package barrel entry point re-exporting XplainSDK DX layer and Agent SDK core runtime components.
  */
 
-// ExplainSDK DX Layer Exports
-export { ExplainSDK } from "./client.js";
+// XplainSDK DX Layer Exports
+export { XplainSDK } from "./client.js";
 export * from "./types.js";
 export * from "./inspectors/index.js";
 export * from "./session.js";

@@ -11,8 +11,9 @@ import path from "node:path";
  * A session acts as a complete "flight recorder" capturing everything that occurred during a single request lifecycle.
  */
 
-/** Package version identifier for ExplainSDK. */
-export const EXPLAIN_SDK_VERSION = "1.0.0";
+/** Package version identifier for XplainSDK. */
+export const XPLAIN_SDK_VERSION = "1.0.0";
+export const EXPLAIN_SDK_VERSION = XPLAIN_SDK_VERSION;
 
 /**
  * Generates a unique, readable session identifier string.

@@ -1,6 +1,6 @@
 /**
  * @file types.ts
- * @description Centralized TypeScript type definitions, interface contracts, and state schemas for ExplainSDK.
+ * @description Centralized TypeScript type definitions, interface contracts, and state schemas for XplainSDK.
  */
 
 export type StreamSpeedPreset = "instant" | "fast" | "normal" | "slow";
@@ -17,7 +17,7 @@ export interface StreamRenderingOptions {
     delayMs?: number;
 }
 
-export interface ExplainSDKOptions {
+export interface XplainSDKOptions {
     provider?: string;
     apiKey: string;
     model?: string;

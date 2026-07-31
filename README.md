@@ -1,8 +1,8 @@
-# ExplainSDK & AI Agent SDK
+# XplainSDK & AI Agent SDK
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
-ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, and **Session Replay**.
+XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, and **Session Replay**.
 
 ---
 
@@ -23,7 +23,7 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
   - [9. Runtime Event Emitter & Tracing](#9-runtime-event-emitter--tracing)
   - [10. Explain Mode (Executive Summaries)](#10-explain-mode-executive-summaries)
   - [11. Session Replay (Step-by-Step Reconstruction)](#11-session-replay-step-by-step-reconstruction)
-  - [12. ExplainSDK Inspector Framework](#12-explainsdk-inspector-framework)
+  - [12. XplainSDK Inspector Framework](#12-xplainsdk-inspector-framework)
   - [13. Actionable Diagnostic Errors](#13-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
 - [License](#-license)
@@ -45,7 +45,7 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
                                     │ (Tracing, Flight Recording & Telemetry)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        EXPLAINSDK (DX & OBSERVABILITY LAYER)           │
+│                         XPLAINSDK (DX & OBSERVABILITY LAYER)           │
 │ ┌───────────────────┐ ┌──────────────────┐ ┌─────────────────────────┐ │
 │ │ Request Timeline  │ │ Session Recorder │ │  Inspector Framework    │ │
 │ └───────────────────┘ └──────────────────┘ └─────────────────────────┘ │
@@ -60,8 +60,8 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `ExplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
-2. **Single Class Rule**: `Agent` and `ExplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
+1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `XplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
+2. **Single Class Rule**: `Agent` and `XplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
 3. **Zero Re-Execution**: **Session Replay** operates 100% deterministically on recorded `SessionRecord` flight recorder objects with zero side effects, never re-calling APIs or re-executing tools.
 
 ---
@@ -69,7 +69,7 @@ ExplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directl
 ## 📦 Installation
 
 ```bash
-npm install explain-sdk zod
+npm install xplain-sdk zod
 ```
 
 ---
@@ -77,7 +77,7 @@ npm install explain-sdk zod
 ## ⚡ Quick Start
 
 ```typescript
-import { Agent, createAgentTool, ExplainSDK, formatInspection } from "explain-sdk";
+import { Agent, createAgentTool, XplainSDK, formatInspection } from "xplain-sdk";
 
 // 1. Create a typed tool
 const weatherTool = createAgentTool({
@@ -135,7 +135,7 @@ const result = await agent.run({ input: "Hello!" });
 Construct tools using `createAgentTool()` with Zod schema validation or JSON parameters.
 
 ```typescript
-import { createAgentTool } from "explain-sdk";
+import { createAgentTool } from "xplain-sdk";
 import { z } from "zod";
 
 const calcTool = createAgentTool({
@@ -155,7 +155,7 @@ const calcTool = createAgentTool({
 Maintain multi-turn conversation context across sessions using `InMemoryStorageAdapter` or `FileStorageAdapter`.
 
 ```typescript
-import { Agent, FileStorageAdapter } from "explain-sdk";
+import { Agent, FileStorageAdapter } from "xplain-sdk";
 
 const fileStore = new FileStorageAdapter({ storageDir: "./my_sessions" });
 
@@ -180,7 +180,7 @@ console.log(res.output_text); // "Your name is Alice."
 Every request produces a structured `SessionRecord` capturing timeline events, performance metrics, token usage, USD costs, tool executions, and streaming metadata.
 
 ```typescript
-import { exportSession } from "explain-sdk";
+import { exportSession } from "xplain-sdk";
 
 const result = await agent.run({ input: "Tell me a joke" });
 
@@ -375,14 +375,14 @@ STEP 3 [RESPONSE] ✓ Assistant Final Response Produced
 
 ---
 
-### 12. ExplainSDK Inspector Framework
+### 12. XplainSDK Inspector Framework
 
 Inspect any `SessionRecord` using specialized inspector utilities:
 
 ```typescript
-import { ExplainSDK, formatInspection } from "explain-sdk";
+import { XplainSDK, formatInspection } from "xplain-sdk";
 
-const sdk = new ExplainSDK({ apiKey: process.env.OPENAI_API_KEY! });
+const sdk = new XplainSDK({ apiKey: process.env.OPENAI_API_KEY! });
 
 // Performance Inspector
 const perf = sdk.inspect.performance(result.session);
@@ -422,7 +422,7 @@ Run any example directly using `npx tsx`:
 
 | Example File | Description | Command |
 | :--- | :--- | :--- |
-| `examples/01_quickstart_agent.ts` | Basic Agent setup, tool execution, and ExplainSDK telemetry | `npx tsx examples/01_quickstart_agent.ts` |
+| `examples/01_quickstart_agent.ts` | Basic Agent setup, tool execution, and XplainSDK telemetry | `npx tsx examples/01_quickstart_agent.ts` |
 | `examples/02_memory_agent.ts` | Persistent multi-turn session memory with `FileStorageAdapter` | `npx tsx examples/02_memory_agent.ts` |
 | `examples/03_guardrails_approval_agent.ts` | Input/Output Guardrails & Human-in-the-Loop tool approval | `npx tsx examples/03_guardrails_approval_agent.ts` |
 | `examples/04_resiliency_agent.ts` | Transient retries, exponential backoff, timeouts & tool loop detection | `npx tsx examples/04_resiliency_agent.ts` |

@@ -1,5 +1,5 @@
 {
-  "name": "explain-sdk",
+  "name": "xplain-sdk",
   "version": "1.0.0",
   "description": "Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer",
   "type": "module",
@@ -19,7 +19,7 @@
   "keywords": [
     "ai",
     "agent-sdk",
-    "explain-sdk",
+    "xplain-sdk",
     "llm",
     "openai",
     "observability",

@@ -15,7 +15,7 @@ import { ExplainFunction } from "./explain/types.js";
 import { reconstructReplay } from "./replay/replay.js";
 import { formatReplayConsole, formatReplayMarkdown } from "./replay/formatter.js";
 import { ReplayFunction } from "./replay/types.js";
-import { ExplainSDK } from "../client.js";
+import { XplainSDK } from "../client.js";
 
 /**
  * @file agent/runner.ts
@@ -91,8 +91,8 @@ export async function runAgentLoop(
             handoffChain: handoffChain
         };
 
-        // 3. Initialize ExplainSDK client instance for DX & Observability
-        const sdk = new ExplainSDK({
+        // 3. Initialize XplainSDK client instance for DX & Observability
+        const sdk = new XplainSDK({
             provider: agent.provider,
             apiKey: agent.apiKey,
             model: selectedModel,

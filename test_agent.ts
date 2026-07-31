@@ -1,4 +1,4 @@
-import { Agent, createAgentTool, ExplainSDK, formatInspection } from "./src/index.js";
+import { Agent, createAgentTool, XplainSDK, formatInspection } from "./src/index.js";
 
 console.log("==========================================");
 console.log(" Testing Agent SDK Phase 1 Core Runtime");
@@ -38,7 +38,7 @@ console.log("==========================================");
 console.log(result.output_text);
 
 console.log("\n==========================================");
-console.log(" Observability Telemetry (via ExplainSDK)");
+console.log(" Observability Telemetry (via XplainSDK)");
 console.log("==========================================");
 console.log(`Session ID:     ${result.session.id}`);
 console.log(`Agent Name:     ${result.agentName}`);
@@ -46,8 +46,8 @@ console.log(`Total Tokens:   ${result.session.tokenUsage.total_tokens}`);
 console.log(`Estimated Cost: ${result.session.cost.formattedCost}`);
 console.log("==========================================\n");
 
-// 4. Use ExplainSDK Inspectors on the returned Agent session
-const sdk = new ExplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
+// 4. Use XplainSDK Inspectors on the returned Agent session
+const sdk = new XplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
 
 const behaviorData = sdk.inspect.behavior(result.session);
 console.log(formatInspection("behavior", behaviorData));

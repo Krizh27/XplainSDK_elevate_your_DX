@@ -1,4 +1,4 @@
-import { Agent, createAgentTool, ExplainSDK, formatInspection } from "../src/index.js";
+import { Agent, createAgentTool, XplainSDK, formatInspection } from "../src/index.js";
 
 console.log("==========================================");
 console.log(" Agent SDK Phase 7: Events & Tracing Test");
@@ -51,11 +51,11 @@ console.log(`Session ID:             ${result.session.id}`);
 console.log(`Estimated Cost:         ${result.session.cost.formattedCost}`);
 console.log(`Output:\n${result.output_text}`);
 
-// 5. Use ExplainSDK Inspectors on the returned Agent session
-const sdk = new ExplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
+// 5. Use XplainSDK Inspectors on the returned Agent session
+const sdk = new XplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
 const perfData = sdk.inspect.performance(result.session);
 console.log("\n==========================================");
-console.log(" ExplainSDK Inspector Output");
+console.log(" XplainSDK Inspector Output");
 console.log("==========================================");
 console.log(formatInspection("performance", perfData));
 console.log("==========================================\n");

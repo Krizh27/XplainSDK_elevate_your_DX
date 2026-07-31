@@ -1,4 +1,4 @@
-import { ExplainSDK, formatInspection, exportSession } from "./src/index.js";
+import { XplainSDK, formatInspection, exportSession } from "./src/index.js";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -15,7 +15,7 @@ async function selectModelFromTerminal(): Promise<string> {
     const rl = readline.createInterface({ input, output });
 
     console.log("==========================================");
-    console.log(" Select OpenAI Model for ExplainSDK (Phase 9.5)");
+    console.log(" Select OpenAI Model for XplainSDK");
     console.log("==========================================");
     console.log("1. gpt-4o-mini  (Recommended: Fast & Token-Efficient)");
     console.log("2. gpt-4o       (Standard Multimodal)");
@@ -59,8 +59,8 @@ console.log(`\n-> Selected Model: ${selectedModel}`);
 const userPrompt = await getUserPromptFromTerminal();
 console.log(`-> Prompt: "${userPrompt}"\n`);
 
-// 3. Initialize ExplainSDK
-const sdk = new ExplainSDK({
+// 3. Initialize XplainSDK
+const sdk = new XplainSDK({
     provider: "openai",
     apiKey: process.env.OPENAI_API_KEY || "test-api-key",
     model: selectedModel

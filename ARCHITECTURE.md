@@ -1,4 +1,4 @@
-# ExplainSDK & Agent SDK - Internal Architecture & Design Documentation
+# XplainSDK & Agent SDK - Internal Architecture & Design Documentation
 
 > 🧭 **Project Compass**: Refer to [VISION.md](file:///c:/Users/meena/Downloads/AI_SDK_TEST/VISION.md) for the core project mission, target audience, problem scope, and non-goals.
 
@@ -19,7 +19,7 @@
                                     │ (Tracing, Flight Recording & Diagnostics)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        EXPLAINSDK (EXISTING DX LAYER)                  │
+│                         XPLAINSDK (EXISTING DX LAYER)                  │
 │ ┌───────────────────┐ ┌──────────────────┐ ┌─────────────────────────┐ │
 │ │ Request Timeline  │ │ Session Recorder │ │  Inspector Framework    │ │
 │ └───────────────────┘ └──────────────────┘ └─────────────────────────┘ │
@@ -41,14 +41,14 @@
 | Phase | Description | Status |
 | :--- | :--- | :--- |
 | **Vision** | Core Mission & Project Boundaries ([VISION.md](file:///c:/Users/meena/Downloads/AI_SDK_TEST/VISION.md)) | ✅ Established |
-| **ExplainSDK** | DX Layer, Flight Recorder, Inspectors, Prompt/Behavior Advisors | ✅ Completed |
+| **XplainSDK** | DX Layer, Flight Recorder, Inspectors, Prompt/Behavior Advisors | ✅ Completed |
 | **Agent Phase 1** | Core Agent Runtime, Tool System & Execution Loop (`Agent`, `createAgentTool`, `runAgentLoop`) | ✅ Completed |
 | **Agent Phase 2** | Persistent Memory & Storage Adapters (`StorageAdapter`, `InMemoryStorageAdapter`, `FileStorageAdapter`) | ✅ Completed |
 | **Agent Phase 3** | Guardrails & Human-in-the-Loop Approval (`inputGuardrails`, `outputGuardrails`, `onApprovalRequired`) | ✅ Completed |
 | **Agent Phase 4** | Resiliency Engine (`withRetryAndTimeout`, `detectToolLoop`, `isTransientError`) | ✅ Completed |
 | **Agent Phase 5** | Structured Output & Schema Repair Engine (`agent.runStructured`, Zod validation, repair loop) | ✅ Completed |
 | **Agent Phase 6** | Multi-Agent Handoffs & Loop Prevention (`createHandoffTool`, `detectHandoffLoop`, `handoffs`) | ✅ Completed |
-| **Agent Phase 7** | Runtime Event Emitter & ExplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed |
+| **Agent Phase 7** | Runtime Event Emitter & XplainSDK Observability (`runId`, `agent.on()`, `SessionRecord`) | ✅ Completed |
 | **Agent Phase 8** | Production-Quality Documentation, Examples Suite & NPM Package Polish | ✅ Completed |
 | **Agent Phase 9** | Explain Mode Orchestration (`result.explain()`, Console, Markdown, JSON renderers) | ✅ Completed |
 | **Agent Phase 10**| Session Replay Engine (`result.replay()`, Step-by-Step Reconstruction, Zero Side Effects) | ✅ Completed (Current) |
@@ -58,7 +58,7 @@
 ## 🎬 Session Replay Architecture (Agent Phase 10)
 
 ```text
-                       ExplainSDK Session Record
+                        XplainSDK Session Record
                                    │
                                    ▼
                     reconstructReplay(session)  [src/agent/replay/replay.ts]
@@ -90,7 +90,7 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 ├── VISION.md             # Core project mission compass & non-goals
 ├── ARCHITECTURE.md       # (This file) Complete architectural documentation
 ├── README.md             # Production-grade user documentation & API reference
-├── test.ts               # Interactive ExplainSDK test script
+├── test.ts               # Interactive XplainSDK test script
 ├── test_agent.ts         # Agent SDK Phase 1 test script
 ├── examples/
 │   ├── 01_quickstart_agent.ts         # Quickstart example
@@ -104,7 +104,7 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
 │   └── 09_session_replay_agent.ts # [NEW IN AGENT PHASE 10] Session Replay example
 └── src/
     ├── index.ts          # Public barrel export
-    ├── client.ts         # ExplainSDK CLASS
+    ├── client.ts         # XplainSDK CLASS
     ├── session.ts        # Session flight recorder & exportSession helper
     ├── inspectors/       # Inspector Framework directory
     ├── providers/        # Provider translation adapters
@@ -120,9 +120,5 @@ c:\Users\meena\Downloads\AI_SDK_TEST\
         ├── handoff/      # Multi-Agent Handoffs & Loop Prevention
         ├── events/       # Runtime Events & Tracing
         ├── explain/      # Explain Mode Orchestrator
-        └── replay/       # [NEW IN AGENT PHASE 10]
-            ├── types.ts       # ReplayStep, ReplayData, ReplayFunction
-            ├── replay.ts      # reconstructReplay() deterministic engine
-            ├── formatter.ts   # formatReplayConsole(), formatReplayMarkdown()
-            └── index.ts       # Replay exports
+        └── replay/       # Session Replay Engine
 ```

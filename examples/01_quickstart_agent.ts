@@ -1,4 +1,4 @@
-import { Agent, createAgentTool, ExplainSDK, formatInspection } from "../src/index.js";
+import { Agent, createAgentTool, XplainSDK, formatInspection } from "../src/index.js";
 
 console.log("==========================================");
 console.log(" Agent SDK Phase 8: Quickstart Example");
@@ -33,14 +33,14 @@ console.log("==========================================");
 console.log(result.output_text);
 
 console.log("\n==========================================");
-console.log(" Telemetry & ExplainSDK Inspectors");
+console.log(" Telemetry & XplainSDK Inspectors");
 console.log("==========================================");
 console.log(`Run ID:         ${result.runId}`);
 console.log(`Session ID:     ${result.session.id}`);
 console.log(`Tokens Used:    ${result.session.tokenUsage.total_tokens}`);
 console.log(`Estimated Cost: ${result.session.cost.formattedCost}`);
 
-const sdk = new ExplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
+const sdk = new XplainSDK({ apiKey: process.env.OPENAI_API_KEY || "test-api-key" });
 const perfData = sdk.inspect.performance(result.session);
 console.log("\nPerformance Inspection:");
 console.log(formatInspection("performance", perfData));
