@@ -2,16 +2,22 @@
 
 > 🚀 **Production-Grade Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer for TypeScript**
 
+[![npm version](https://img.shields.io/npm/v/xplain-sdk.svg?style=flat-square)](https://www.npmjs.com/package/xplain-sdk)
+[![license](https://img.shields.io/github/license/Krizh27/XplainSDK_elevate_your_DX.svg?style=flat-square)](LICENSE)
+[![CI Pipeline](https://github.com/Krizh27/XplainSDK_elevate_your_DX/actions/workflows/ci.yml/badge.svg)](https://github.com/Krizh27/XplainSDK_elevate_your_DX/actions)
+
 XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly on top of official provider SDKs (OpenAI, Anthropic, Gemini, Groq, Mistral). It provides a full-featured agent runtime engine paired with flight recorder observability, prompt analysis, behavior inspection, persistent memory, guardrails, resiliency retries, structured outputs, multi-agent handoffs, typed runtime events, **Explain Mode**, **Session Replay**, **Interactive HTML Reports**, and **Smart Debug Assistant**.
 
 ---
 
 ## 📚 Table of Contents
 
+- [Mission: Why XplainSDK Exists](#-mission-why-xplainsdk-exists)
+- [Comparison with Existing Frameworks](#-comparison-with-existing-frameworks)
 - [Core Philosophy & Architecture](#-core-philosophy--architecture)
 - [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Core Features & API Reference](#-core-features--api-reference)
+- [5-Minute Quick Start Tutorial](#-5-minute-quick-start-tutorial)
+- [Core Concepts & API Reference](#-core-concepts--api-reference)
   - [1. Agent Runtime & Definition](#1-agent-runtime--definition)
   - [2. Typed Tool System](#2-typed-tool-system)
   - [3. Persistent Memory & Storage Adapters](#3-persistent-memory--storage-adapters)
@@ -28,11 +34,38 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
   - [14. XplainSDK Inspector Framework](#14-xplainsdk-inspector-framework)
   - [15. Actionable Diagnostic Errors](#15-actionable-diagnostic-errors)
 - [Runnable Examples Directory](#-runnable-examples-directory)
+- [Roadmap & Contributing](#-roadmap--contributing)
 - [License](#-license)
 
 ---
 
-## 🎯 Core Philosophy & Architecture
+## 🎯 Mission: Why XplainSDK Exists
+
+Building reliable AI agents is notoriously difficult. Most existing frameworks treat LLM execution loops as black boxes: when an agent hangs, loops infinitely, selects the wrong tool, or fails a schema validation, developers are left digging through fragmented console logs or parsing raw JSON telemetry.
+
+**XplainSDK** was designed from the ground up to **make the invisible visible**. It provides:
+1. **Runtime Execution Engine**: Complete lifecycle control for agents, tools, memory storage adapters, guardrails, resiliency retries, structured outputs, and multi-agent delegation chains.
+2. **Flight Recorder Observability**: Automatic recording of request timelines, latency distribution, token usage, dollar costs, and behavioral diagnostics.
+3. **Developer-First Tools**: Explain Mode summaries, deterministic Session Replay, standalone zero-CDN HTML reports (`report.html`), and an evidence-based Smart Debug Assistant.
+
+---
+
+## 🆚 Comparison with Existing Frameworks
+
+| Feature | XplainSDK | OpenAI SDK | OpenAI Agents SDK | Vercel AI SDK | LangGraph |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Agent Runtime Loop** | ✅ Included | ❌ Raw API | ✅ Basic Loop | ⚡ React UI focus | ⚠️ Graph state machine |
+| **Flight Recorder Telemetry** | ✅ Automatic | ❌ None | ❌ None | ❌ None | ❌ Extra setup |
+| **Explain Mode** | ✅ Built-in | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Session Replay Engine** | ✅ Zero side effects | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Standalone HTML Report** | ✅ Zero CDN file | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Smart Debug Assistant** | ✅ Evidence-based | ❌ None | ❌ None | ❌ None | ❌ None |
+| **3-Part Diagnostic Errors** | ✅ What/Why/Fix | ❌ Generic | ❌ Generic | ❌ Generic | ❌ Stack traces |
+| **Dependencies** | Minimal (`zod`, `openai`) | Raw API | Heavy | Vercel ecosystem | Complex graph engine |
+
+---
+
+## 🏛 Core Philosophy & Architecture
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -44,7 +77,7 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
 │ │ Multi-Agent Loop  │ │ Tool Execution   │ │ Handoffs & Human-in-Loop│ │
 │ └───────────────────┘ └──────────────────┘ └─────────────────────────┘ │
 └───────────────────────────────────┬────────────────────────────────────┘
-                                    │ (Tracing, Flight Recording & Telemetry)
+                                    │ (Tracing, Flight Recording & Diagnostics)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                         XPLAINSDK (DX & OBSERVABILITY LAYER)           │
@@ -62,9 +95,9 @@ XplainSDK is a Developer Experience (DX) layer and AI Agent SDK sitting directly
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Single Responsibility**: `Agent` handles agent lifecycle, tool execution loops, memory, guardrails, handoffs, and schema repair. `XplainSDK` handles flight recording, latency measurement, cost calculation, prompt analysis, and terminal telemetry.
-2. **Single Class Rule**: `Agent` and `XplainSDK` represent the primary entrypoints. Internal utilities are pure, stateless functions.
-3. **Evidence-Based Debugging**: **Smart Debug Assistant** analyzes `SessionRecord` telemetry to answer *"What happened?"*, *"Why did it happen?"*, *"What should I inspect next?"*, and *"What can I improve?"* with zero unevidenced advice.
+1. **Single Responsibility**: `Agent` manages agent identity, system instructions, tool selection loops, memory storage adapters, guardrails, resiliency, and handoffs. `XplainSDK` manages session telemetry, costs, prompt analysis, terminal output, and HTML report rendering.
+2. **Single Class Rule**: `Agent` and `XplainSDK` are the **ONLY CLASSES** in the entire codebase. All helper modules are pure, stateless functions.
+3. **Evidence-Based Diagnostics**: Smart Debug Assistant and Explain Mode consume recorded facts from `SessionRecord`. They **never** fabricate explanations or invent unevidenced recommendations.
 
 ---
 
@@ -76,45 +109,63 @@ npm install xplain-sdk zod
 
 ---
 
-## ⚡ Quick Start
+## ⚡ 5-Minute Quick Start Tutorial
+
+Create a file named `app.ts`:
 
 ```typescript
-import { Agent, createAgentTool, XplainSDK, formatInspection } from "xplain-sdk";
+import { Agent, createAgentTool } from "xplain-sdk";
+import { z } from "zod";
 
-// 1. Create a typed tool
-const weatherTool = createAgentTool({
-    name: "get_weather",
-    description: "Get real-time weather forecast for a city",
-    execute: async ({ city }: { city: string }) => {
-        return `30°C, Sunny in ${city}`;
+// Step 1: Define a typed tool with Zod parameter validation
+const discountTool = createAgentTool({
+    name: "calculate_discount",
+    description: "Calculates the final discounted price for an item",
+    schema: z.object({
+        price: z.number().describe("Original item price in USD"),
+        percent: z.number().describe("Discount percentage (0-100)")
+    }),
+    execute: async ({ price, percent }) => {
+        const discountAmount = price * (percent / 100);
+        return { originalPrice: price, discountAmount, finalPrice: price - discountAmount };
     }
 });
 
-// 2. Instantiate an Agent
+// Step 2: Instantiate an Agent
 const agent = new Agent({
-    name: "WeatherAssistant",
-    instructions: "You are a friendly weather assistant.",
+    name: "ShoppingAssistant",
+    instructions: "You are a helpful shopping assistant. Use calculate_discount to compute sales prices.",
     model: "gpt-4o-mini",
     apiKey: process.env.OPENAI_API_KEY!,
-    tools: [weatherTool]
+    tools: [discountTool]
 });
 
-// 3. Execute agent run & run Smart Debug Assistant
-const result = await agent.run({ input: "What is the weather in Surat today?", debug: true });
+// Step 3: Execute Agent Run with Smart Debug Assistant enabled
+const result = await agent.run({
+    input: "Calculate a 20% discount on a $150 item.",
+    debug: true
+});
 
-console.log(result.output_text);
+// Step 4: Display Output
+console.log("\nResponse:", result.output_text);
 
-// First-class Debug API
-result.debug(); // Pretty terminal diagnostic box
+// Step 5: Generate standalone HTML report file
+await result.report({ outputPath: "./my_agent_report.html" });
+```
+
+Run the application:
+```bash
+export OPENAI_API_KEY="your-api-key"
+npx tsx app.ts
 ```
 
 ---
 
-## 🔑 Core Features & API Reference
+## 🔑 Core Concepts & API Reference
 
 ### 1. Agent Runtime & Definition
 
-Define agents declaratively with system instructions, models, tools, memory, and guardrail policies.
+Define agents declaratively with identity, system instructions, tools, persistent memory, and resiliency parameters.
 
 ```typescript
 const agent = new Agent({
@@ -133,7 +184,7 @@ const result = await agent.run({ input: "Hello!" });
 
 ### 2. Typed Tool System
 
-Construct tools using `createAgentTool()` with Zod schema validation or JSON parameters.
+Construct type-safe tools using `createAgentTool()` with Zod schemas or raw JSON schemas.
 
 ```typescript
 import { createAgentTool } from "xplain-sdk";
@@ -153,7 +204,7 @@ const calcTool = createAgentTool({
 
 ### 3. Persistent Memory & Storage Adapters
 
-Maintain multi-turn conversation context across sessions using `InMemoryStorageAdapter` or `FileStorageAdapter`.
+Retain multi-turn conversation context across sessions using `InMemoryStorageAdapter` or `FileStorageAdapter`.
 
 ```typescript
 import { Agent, FileStorageAdapter } from "xplain-sdk";
@@ -185,8 +236,8 @@ import { exportSession } from "xplain-sdk";
 
 const result = await agent.run({ input: "Tell me a joke" });
 
-console.log(result.session.id);                  // Unique session ID
-console.log(result.session.cost.formattedCost);  // "$0.00003"
+console.log(result.session.id);                     // Unique session ID
+console.log(result.session.cost.formattedCost);     // "$0.00003"
 console.log(result.session.performance.durationMs); // 450ms
 
 // Export flight recorder JSON artifact to disk
@@ -471,6 +522,12 @@ Run any example directly using `npx tsx`:
 
 ---
 
+## 🗺 Roadmap & Contributing
+
+Please check our [ROADMAP.md](ROADMAP.md) for upcoming features and version plans. We welcome community contributions! Refer to [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and standards.
+
+---
+
 ## 📄 License
 
-MIT © [Krizh27](https://github.com/Krizh27)
+MIT © [Krizh27](https://github.com/Krizh27) & XplainSDK Contributors
