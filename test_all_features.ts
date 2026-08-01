@@ -63,6 +63,10 @@ assert(calcTool.name === "calculate_sum", "Tool name is correctly assigned");
 assert(typeof calcTool.execute === "function", "Tool execute handler is a function");
 const toolResult = await calcTool.execute({ a: 15, b: 25 });
 assert(toolResult === 40, "Tool execution returns expected mathematical result (40)");
+assert(calcTool.parameters?.type === "object", "Tool parameters schema type is object");
+assert(calcTool.parameters?.properties?.a?.type === "number" && calcTool.parameters?.properties?.b?.type === "number", "Tool parameters properties derived correctly from Zod schema");
+assert(Array.isArray(calcTool.parameters?.required) && calcTool.parameters.required.includes("a") && calcTool.parameters.required.includes("b"), "Tool required parameters derived correctly from Zod schema");
+
 
 // -------------------------------------------------------------------
 // TEST 2: Agent Instance Creation & Properties (Phase 1)

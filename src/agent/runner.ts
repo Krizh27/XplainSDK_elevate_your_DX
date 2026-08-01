@@ -21,6 +21,7 @@ import { analyzeDebug } from "./debug/debug.js";
 import { formatDebugConsole, formatDebugMarkdown } from "./debug/formatter.js";
 import { DebugFunction } from "./debug/types.js";
 import { XplainSDK } from "../client.js";
+import { zodToJsonSchema } from "../tools.js";
 
 /**
  * @file agent/runner.ts
@@ -123,7 +124,8 @@ export async function runAgentLoop(
                 sdk.registerTool({
                     name: tool.name,
                     description: tool.description,
-                    parameters: tool.parameters,
+                    schema: tool.schema,
+                    parameters: tool.parameters || (tool.schema ? zodToJsonSchema(tool.schema) : undefined),
                     execute: async (args: any) => {
                         const now = new Date().toISOString();
 

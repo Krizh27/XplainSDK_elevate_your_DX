@@ -1,4 +1,5 @@
 import { AgentTool } from "./types.js";
+import { zodToJsonSchema } from "../tools.js";
 
 /**
  * @file agent/tool.ts
@@ -52,7 +53,7 @@ export function createAgentTool<TArgs = Record<string, any>, TResult = any>(
         name: options.name.trim(),
         description: options.description || "",
         schema: options.schema,
-        parameters: options.parameters,
+        parameters: options.parameters || (options.schema ? zodToJsonSchema(options.schema) : undefined),
         requiresApproval: options.requiresApproval || false,
         execute: options.execute
     };

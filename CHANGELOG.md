@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.0.2] - 2026-08-01
+
+### 🛠️ Fixes & Improvements
+- **Zod Tool Schema Conversion**: Added automatic conversion from Zod schemas (`schema` parameter in `createAgentTool`) to standard OpenAI function JSON Schema parameters (`parameters`), resolving issue where tools were sent without arguments to OpenAI and executed with empty (`{}`) parameters.
+- **Multi-Turn Tool Execution**: Upgraded chat request loop to support multi-turn tool calls (up to 10 iterations) rather than single-turn execution, preventing empty textual returns when models invoke tools across sequential reasoning steps.
+
 ## [1.0.1] - 2026-08-01
 
 ### 🛠️ Fixes & Improvements

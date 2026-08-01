@@ -1,6 +1,6 @@
 {
   "name": "xplain-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Open-Source AI Agent SDK Core & Developer Experience (DX) Observability Layer",
   "type": "module",
   "main": "dist/index.js",

@@ -96,57 +96,68 @@ export async function handleChat(
         rawResponse = initialResponse.raw_message;
 
         if (initialResponse.tool_calls && initialResponse.tool_calls.length > 0 && toolRegistry) {
-            recordEvent(timeline, "Tool Selected");
-
             const messages: any[] = [
                 { role: "user", content: options.input },
                 initialResponse.raw_message
             ];
 
-            for (const toolCall of initialResponse.tool_calls) {
-                const toolName = toolCall.function.name;
-                const rawArgs = toolCall.function.arguments;
-                const registeredTool = getToolFromRegistry(toolRegistry, toolName);
+            let currentResponse = initialResponse;
+            let toolIterations = 0;
+            const maxToolIterations = 10;
 
-                if (registeredTool) {
-                    const inspection = await inspectAndExecuteTool(
-                        registeredTool,
-                        rawArgs,
-                        `Model decided to execute ${toolName}() to answer user prompt.`
-                    );
+            while (currentResponse.tool_calls && currentResponse.tool_calls.length > 0 && toolRegistry && toolIterations < maxToolIterations) {
+                toolIterations++;
+                recordEvent(timeline, toolIterations === 1 ? "Tool Selected" : `Tool Selected (Turn ${toolIterations})`);
 
-                    recordToolInspection(timeline, inspection);
-                    recordEvent(timeline, `Tool Executed: ${toolName}`);
-                    log(formatToolInspectorReport(inspection));
+                for (const toolCall of currentResponse.tool_calls) {
+                    const toolName = toolCall.function.name;
+                    const rawArgs = toolCall.function.arguments;
+                    const registeredTool = getToolFromRegistry(toolRegistry, toolName);
 
-                    messages.push({
-                        role: "tool",
-                        tool_call_id: toolCall.id,
-                        content: inspection.success ? (inspection.result || "") : `Error: ${inspection.error}`
-                    });
-                } else {
-                    recordEvent(timeline, `Tool Failed: ${toolName} (Not registered)`);
-                    messages.push({
-                        role: "tool",
-                        tool_call_id: toolCall.id,
-                        content: `Error: Tool '${toolName}' is not registered.`
-                    });
+                    if (registeredTool) {
+                        const inspection = await inspectAndExecuteTool(
+                            registeredTool,
+                            rawArgs,
+                            `Model decided to execute ${toolName}() to answer user prompt.`
+                        );
+
+                        recordToolInspection(timeline, inspection);
+                        recordEvent(timeline, `Tool Executed: ${toolName}`);
+                        log(formatToolInspectorReport(inspection));
+
+                        messages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: inspection.success ? (inspection.result || "") : `Error: ${inspection.error}`
+                        });
+                    } else {
+                        recordEvent(timeline, `Tool Failed: ${toolName} (Not registered)`);
+                        messages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: `Error: Tool '${toolName}' is not registered.`
+                        });
+                    }
+                }
+
+                recordEvent(timeline, "Sending Tool Results to Model");
+                const followupResponse = await callOpenAIFollowupAdapter(
+                    apiKey,
+                    selectedModel,
+                    messages,
+                    formattedTools,
+                    options.providerOptions
+                );
+
+                totalPromptTokens += followupResponse.usage.prompt_tokens;
+                totalCompletionTokens += followupResponse.usage.completion_tokens;
+                finalOutputText = followupResponse.output_text;
+                rawResponse = followupResponse.raw_message;
+                currentResponse = followupResponse;
+                if (currentResponse.raw_message) {
+                    messages.push(currentResponse.raw_message);
                 }
             }
-
-            recordEvent(timeline, "Sending Tool Results to Model");
-            const followupResponse = await callOpenAIFollowupAdapter(
-                apiKey,
-                selectedModel,
-                messages,
-                formattedTools,
-                options.providerOptions
-            );
-
-            totalPromptTokens += followupResponse.usage.prompt_tokens;
-            totalCompletionTokens += followupResponse.usage.completion_tokens;
-            finalOutputText = followupResponse.output_text;
-            rawResponse = followupResponse.raw_message;
         } else {
             finalOutputText = initialResponse.output_text;
         }

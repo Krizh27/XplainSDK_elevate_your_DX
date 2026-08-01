@@ -63,6 +63,7 @@ export interface TimelineEvent {
 export interface ToolDefinition<TArgs = Record<string, any>, TResult = any> {
     name: string;
     description: string;
+    schema?: any;
     parameters?: Record<string, any>;
     execute: (args: TArgs) => Promise<TResult> | TResult;
 }
