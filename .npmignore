@@ -1,0 +1,12 @@
+src/
+examples/
+*.ts
+!*.d.ts
+tsconfig*.json
+test*.ts
+node_modules/
+session_*.json
+.env
+*.log
+.git
+.github

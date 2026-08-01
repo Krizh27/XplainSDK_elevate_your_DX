@@ -7,8 +7,10 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
     "types": ["node"],
     "outDir": "./dist"
   },
-  "include": ["src/**/*", "test.ts", "examples/**/*"]
+  "include": ["src/**/*", "test.ts", "examples/**/*", "test_*.ts"]
 }

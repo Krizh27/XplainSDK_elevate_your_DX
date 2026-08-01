@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.0.1] - 2026-08-01
+
+### 🛠️ Fixes & Improvements
+- **TypeScript Declarations**: Enabled `declaration` and `declarationMap` settings in compiler configuration so `.d.ts` definitions are automatically emitted on build.
+- **Build Pipeline**: Created dedicated `tsconfig.build.json` targeting strictly library sources (`src/`), simplifying output structure to `dist/index.js` and `dist/index.d.ts`.
+- **Package Integrity**: Added `.npmignore` file and `"clean"` script to prevent extraneous tests, examples, and source files from appearing in published npm tarballs.
+
 ## [1.0.0] - 2026-07-31
 
 ### 🎉 Initial Release & Feature Complete
